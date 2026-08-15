@@ -1,0 +1,74 @@
+[
+  {
+    "id": "celeb_priyanka",
+    "name": "Priyanka Chopra",
+    "title": "Sunlit Bronzed Radiance",
+    "faceShape": "Oval",
+    "undertone": "warm",
+    "fitzpatrick": ["III", "IV", "V"],
+    "vibes": ["Bold", "Formal", "Golden Hour"],
+    "referencePhotoUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+    "description": "Warm golden bronzer, architectural winged liner, and spiced terracotta satin lip.",
+    "keyProducts": ["Terracotta Warm Lip", "High-Glow Golden Bronzer", "Winged Satin Eyeliner"]
+  },
+  {
+    "id": "celeb_deepika",
+    "name": "Deepika Padukone",
+    "title": "Regal Kohl & Nude Velvet",
+    "faceShape": "Oval",
+    "undertone": "warm",
+    "fitzpatrick": ["III", "IV"],
+    "vibes": ["Formal", "Bold", "Editorial"],
+    "referencePhotoUrl": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80",
+    "description": "Intense smudged smokey kohl eyes, sculpted low cheekbones, and muted peachy-nude velvet lips.",
+    "keyProducts": ["Smokey Kohl Kajal", "Sculpting Contour", "Muted Caramel Velvet Lip"]
+  },
+  {
+    "id": "celeb_zendaya",
+    "name": "Zendaya",
+    "title": "Clean Girl Glass-Skin Glam",
+    "faceShape": "Heart",
+    "undertone": "warm",
+    "fitzpatrick": ["III", "IV"],
+    "vibes": ["Natural", "Golden Hour", "Casual"],
+    "referencePhotoUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80",
+    "description": "Feathered laminated brows, sheer dewy foundation glow, and glossy nude lip tint.",
+    "keyProducts": ["Feathered Brow Gel", "Dewy Cheek Glaze", "High-Shine Nude Gloss"]
+  },
+  {
+    "id": "celeb_margot",
+    "name": "Margot Robbie",
+    "title": "Monochromatic Peach Glow",
+    "faceShape": "Square",
+    "undertone": "warm",
+    "fitzpatrick": ["I", "II", "III"],
+    "vibes": ["Natural", "Casual", "Daytime"],
+    "referencePhotoUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80",
+    "description": "Soft peach flush on the apples of cheeks to soften angles, paired with coral-nude creamy lipstick.",
+    "keyProducts": ["Peach Cream Blush", "Champagne Lid Wash", "Coral Silk Lipstick"]
+  },
+  {
+    "id": "celeb_rihanna",
+    "name": "Rihanna",
+    "title": "Iconic Crimson Stunner",
+    "faceShape": "Oval",
+    "undertone": "warm",
+    "fitzpatrick": ["IV", "V", "VI"],
+    "vibes": ["Bold", "Editorial", "Night Out"],
+    "referencePhotoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+    "description": "High-pigment universal crimson red matte lip with champagne diamond kilowatt cheek highlight.",
+    "keyProducts": ["Uncensored Crimson Lip", "Diamond Kilowatt Highlight", "Defined Precision Liner"]
+  },
+  {
+    "id": "celeb_lily",
+    "name": "Lily Collins",
+    "title": "Parisian Statement Brow & Ruby",
+    "faceShape": "Heart",
+    "undertone": "cool",
+    "fitzpatrick": ["I", "II"],
+    "vibes": ["Classic", "Bold", "Formal"],
+    "referencePhotoUrl": "https://images.unsplash.com/photo-1519699047748-de8e457a634e?auto=format&fit=crop&w=800&q=80",
+    "description": "Bold structured feathered brows, soft porcelain skin finish, and deep rich berry-ruby lip.",
+    "keyProducts": ["Micro-Stroke Brow Pencil", "Ruby Berry Lip Stain", "Soft Velvet Powder"]
+  }
+]

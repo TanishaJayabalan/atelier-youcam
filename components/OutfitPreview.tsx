@@ -20,7 +20,7 @@ export default function OutfitPreview({
   const { topOrDress, bottom, outerwear, stylingRationale } = outfit;
   const [viewMode, setViewMode] = useState<'fit' | 'paired'>('fit');
 
-  const garmentImage = topOrDress?.image_url || renderedImageUrl || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80';
+  const garmentImage = renderedImageUrl || topOrDress?.image_url || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80';
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 flex flex-col justify-between">

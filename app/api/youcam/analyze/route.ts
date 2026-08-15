@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { base64ToBuffer } from '@/lib/image-utils';
-import { analyzeSkin, generateMockSkinAnalysis } from '@/lib/youcam/skin-analysis';
-import { analyzeSkinTone, generateMockSkinTone } from '@/lib/youcam/skin-tone';
+import { analyzeParallelBeautyProfile } from '@/lib/youcam/parallel-analyzer';
 import { fetchWeather, generateMockWeather, WeatherResult } from '@/lib/weather';
 import { getClosetItems, saveLookSession } from '@/lib/supabase';
 import { generateRecommendation } from '@/lib/recommendation-engine';
@@ -46,22 +45,20 @@ export async function POST(req: NextRequest) {
       weather = generateMockWeather();
     }
 
-    // 2. Run YouCam Skin Analysis + Skin Tone Analysis in parallel with genuine optical fallbacks
-    const skinAnalysisPromise = analyzeSkin(selfieBuffer, contentType, telemetry).catch((err) => {
-      console.warn('Skin analysis API error, using optical CV analysis:', err.message);
-      return generateMockSkinAnalysis(selfieBuffer, telemetry);
-    });
-
-    const skinTonePromise = analyzeSkinTone(selfieBuffer, contentType, telemetry).catch((err) => {
-      console.warn('Skin tone API error, using optical CV analysis:', err.message);
-      return generateMockSkinTone(selfieBuffer, telemetry);
-    });
-
-    const [skinAnalysis, skinTone, closetItems] = await Promise.all([
-      skinAnalysisPromise,
-      skinTonePromise,
+    // 2. Run Parallel Multi-AI Analyzer Pipeline (Skin + Fitzpatrick + Color Tones + Face Attributes)
+    const [beautyProfile, skinTone, closetItems] = await Promise.all([
+      analyzeParallelBeautyProfile(selfieBuffer, telemetry).catch((err) => {
+        console.warn('Parallel beauty analyzer warning:', err);
+        return analyzeParallelBeautyProfile(selfieBuffer, telemetry);
+      }),
+      analyzeSkinTone(selfieBuffer, contentType, telemetry).catch((err) => {
+        console.warn('Skin tone API error, using optical CV analysis:', err.message);
+        return generateMockSkinTone(selfieBuffer, telemetry);
+      }),
       getClosetItems(),
     ]);
+
+    const skinAnalysis = beautyProfile.skin;
 
     // 3. Generate Unified Recommendations
     const recommendation = generateRecommendation({
@@ -86,6 +83,7 @@ export async function POST(req: NextRequest) {
       sessionId: session.id,
       skinAnalysis,
       skinTone,
+      beautyProfile,
       weather,
       recommendation,
     });

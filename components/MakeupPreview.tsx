@@ -4,12 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, CheckCircle2, Paintbrush, SplitSquareVertical, SlidersHorizontal } from 'lucide-react';
 import { MakeupStep } from '@/lib/youcam/makeup-vto';
 import { applyRealMakeupLandmarks } from '@/lib/face-mesh-makeup';
+import { UserBeautyProfile } from '@/types/beauty-profile';
+import { findFoundationMatch } from '@/lib/foundation-matcher';
 
 interface MakeupPreviewProps {
   makeupSteps: MakeupStep[];
   renderedImageUrl: string | null;
   isRendering: boolean;
   originalSelfieUrl?: string | null;
+  beautyProfile?: UserBeautyProfile;
 }
 
 export default function MakeupPreview({
@@ -164,7 +167,7 @@ export default function MakeupPreview({
                 {/* Status Badge */}
                 <div className="absolute bottom-3 right-3 bg-stone-900/85 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  {showOriginal ? 'Original Canvas' : 'VTO Lipstick & Blush Applied'}
+                  {showOriginal ? 'Original Canvas' : 'Full VTO Look Applied'}
                 </div>
 
                 {/* Active Lip Shade Tag */}
@@ -206,6 +209,42 @@ export default function MakeupPreview({
             </div>
           )}
         </div>
+
+        {/* Foundation Shade Finder Panel (Feature 1.2) */}
+        {beautyProfile && (
+          <div className="mb-4 p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80">
+            {(() => {
+              const match = findFoundationMatch(beautyProfile.colorTones, beautyProfile.fitzpatrick.type);
+              return (
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="w-7 h-7 rounded-full border-2 border-white shadow-xs shrink-0"
+                      style={{ backgroundColor: match.matchedHex }}
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-stone-900">{match.shadeName}</span>
+                        <span className="font-mono text-[10px] text-amber-800 bg-amber-100/80 px-1.5 py-0.2 rounded font-semibold">
+                          {match.shadeCode}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 mt-0.5">
+                        {match.undertone} · {match.recommendedFinish}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                      ✓ Shade Matched
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Applied Steps List */}
         <div className="space-y-2.5">

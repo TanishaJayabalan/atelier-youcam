@@ -117,6 +117,12 @@ export async function applyMakeup(
             foundation: steps.find((s) => s.category === 'foundation')?.colorHex
               ? { color: steps.find((s) => s.category === 'foundation')?.colorHex, intensity: steps.find((s) => s.category === 'foundation')?.intensity || 75 }
               : undefined,
+            eyeshadow: steps.find((s) => s.category === 'eyeshadow')?.colorHex
+              ? { color: steps.find((s) => s.category === 'eyeshadow')?.colorHex, intensity: steps.find((s) => s.category === 'eyeshadow')?.intensity || 65 }
+              : undefined,
+            eyebrow: steps.find((s) => s.category === 'eyebrow')?.colorHex
+              ? { color: steps.find((s) => s.category === 'eyebrow')?.colorHex, intensity: steps.find((s) => s.category === 'eyebrow')?.intensity || 70 }
+              : undefined,
           },
         },
       ],

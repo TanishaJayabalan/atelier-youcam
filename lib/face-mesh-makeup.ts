@@ -113,6 +113,8 @@ export async function applyRealMakeupLandmarks(
       const foundation = makeupSteps.find((s) => s.category === 'foundation');
       const blush = makeupSteps.find((s) => s.category === 'blush');
       const lip = makeupSteps.find((s) => s.category === 'lip');
+      const eyeshadow = makeupSteps.find((s) => s.category === 'eyeshadow');
+      const eyebrow = makeupSteps.find((s) => s.category === 'eyebrow');
 
       try {
         const fm = await getFaceMesh();
@@ -214,18 +216,18 @@ export async function applyRealMakeupLandmarks(
           // =========================================================================
           if (blush && blush.colorHex) {
             ctx.save();
-            ctx.globalCompositeOperation = 'soft-light';
-            const blushAlpha = ((blush.intensity || 55) / 100) * 0.65;
+            ctx.globalCompositeOperation = 'source-over';
+            const blushAlpha = Math.min(0.75, ((blush.intensity || 65) / 100) * 0.7);
 
             // Left cheek (landmark 116/123)
             const leftCheekPt = landmarks[116] || landmarks[123];
             if (leftCheekPt) {
               const lx = leftCheekPt.x * w;
               const ly = leftCheekPt.y * h;
-              const radius = w * 0.1;
+              const radius = w * 0.11;
               const grad = ctx.createRadialGradient(lx, ly, 2, lx, ly, radius);
               grad.addColorStop(0, blush.colorHex);
-              grad.addColorStop(0.7, blush.colorHex);
+              grad.addColorStop(0.6, blush.colorHex);
               grad.addColorStop(1, 'transparent');
 
               ctx.fillStyle = grad;
@@ -240,10 +242,10 @@ export async function applyRealMakeupLandmarks(
             if (rightCheekPt) {
               const rx = rightCheekPt.x * w;
               const ry = rightCheekPt.y * h;
-              const radius = w * 0.1;
+              const radius = w * 0.11;
               const grad = ctx.createRadialGradient(rx, ry, 2, rx, ry, radius);
               grad.addColorStop(0, blush.colorHex);
-              grad.addColorStop(0.7, blush.colorHex);
+              grad.addColorStop(0.6, blush.colorHex);
               grad.addColorStop(1, 'transparent');
 
               ctx.fillStyle = grad;
@@ -257,7 +259,51 @@ export async function applyRealMakeupLandmarks(
           }
 
           // =========================================================================
-          // 3. LIPSTICK ON EXACT LIP CONTOURS
+          // 3. EYESHADOW SWEEP OVER UPPER EYELIDS
+          // =========================================================================
+          if (eyeshadow && eyeshadow.colorHex) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            const eyeAlpha = Math.min(0.65, ((eyeshadow.intensity || 60) / 100) * 0.6);
+
+            ctx.fillStyle = eyeshadow.colorHex;
+            ctx.globalAlpha = eyeAlpha;
+
+            // Fill left eyelid area
+            drawPolygon(ctx, landmarks, LEFT_EYE, w, h);
+            ctx.fill();
+
+            // Fill right eyelid area
+            drawPolygon(ctx, landmarks, RIGHT_EYE, w, h);
+            ctx.fill();
+
+            ctx.restore();
+          }
+
+          // =========================================================================
+          // 4. EYEBROW SHAPE TINT & DEFINITION
+          // =========================================================================
+          if (eyebrow && eyebrow.colorHex) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            const browAlpha = Math.min(0.7, ((eyebrow.intensity || 70) / 100) * 0.65);
+
+            ctx.fillStyle = eyebrow.colorHex;
+            ctx.globalAlpha = browAlpha;
+
+            // Left eyebrow polygon
+            drawPolygon(ctx, landmarks, LEFT_EYEBROW, w, h);
+            ctx.fill();
+
+            // Right eyebrow polygon
+            drawPolygon(ctx, landmarks, RIGHT_EYEBROW, w, h);
+            ctx.fill();
+
+            ctx.restore();
+          }
+
+          // =========================================================================
+          // 5. LIPSTICK ON EXACT LIP CONTOURS
           // =========================================================================
           if (lip && lip.colorHex) {
             ctx.save();

@@ -8,7 +8,8 @@ import { ClosetItem } from '../lib/supabase';
 async function runRecommendationTests() {
   console.log('--- Testing Component 10: Recommendation Engine ---');
 
-  const skin = generateMockSkinAnalysis(); // has redness: 68 (high)
+  const skin = generateMockSkinAnalysis();
+  skin.concerns.redness = { key: 'redness', displayName: 'Erythema & Active Redness', score: 68, severity: 'high' };
   const skinTone = generateMockSkinTone(); // warm undertone
   const weather = generateMockWeather(); // tempC: 24.5, uvIndex: 7.2 (high)
   const closet = demoCloset as ClosetItem[];

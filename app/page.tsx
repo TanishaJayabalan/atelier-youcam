@@ -11,13 +11,39 @@ import SkincareRoutineCard from '@/components/SkincareRoutineCard';
 import MakeupPreview from '@/components/MakeupPreview';
 import OutfitPreview from '@/components/OutfitPreview';
 import GapFillShelf from '@/components/GapFillShelf';
+import CelebrityLookPanel from '@/components/CelebrityLookPanel';
+import HairAnalysisPanel from '@/components/HairAnalysisPanel';
 import { WeatherResult, generateMockWeather } from '@/lib/weather';
 import { Recommendation } from '@/lib/recommendation-engine';
 import { SkinAnalysisResult } from '@/lib/youcam/skin-analysis';
 import { SkinToneResult } from '@/lib/youcam/skin-tone';
 import { OpticalTelemetry } from '@/lib/image-analysis';
+import { UserBeautyProfile } from '@/types/beauty-profile';
 
-export default function MirrorCheckHome() {
+import { ShoppingBag } from 'lucide-react';
+import { CartProvider, useCart } from '@/components/CartContext';
+import CartDrawer from '@/components/CartDrawer';
+
+function HeaderCartButton() {
+  const { itemCount, setIsCartOpen } = useCart();
+  return (
+    <button
+      type="button"
+      onClick={() => setIsCartOpen(true)}
+      className="text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs relative"
+    >
+      <ShoppingBag className="w-3.5 h-3.5" />
+      <span>Wishlist Cart</span>
+      {itemCount > 0 && (
+        <span className="bg-stone-900 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-white">
+          {itemCount}
+        </span>
+      )}
+    </button>
+  );
+}
+
+export function MirrorCheckContent() {
   // Input states
   const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
   const [opticalTelemetry, setOpticalTelemetry] = useState<OpticalTelemetry | null>(null);
@@ -34,6 +60,7 @@ export default function MirrorCheckHome() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [skinAnalysis, setSkinAnalysis] = useState<SkinAnalysisResult | null>(null);
   const [skinTone, setSkinTone] = useState<SkinToneResult | null>(null);
+  const [beautyProfile, setBeautyProfile] = useState<UserBeautyProfile | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [makeupResultUrl, setMakeupResultUrl] = useState<string | null>(null);
   const [outfitResultUrl, setOutfitResultUrl] = useState<string | null>(null);
@@ -74,6 +101,7 @@ export default function MirrorCheckHome() {
       setSessionId(data.sessionId);
       setSkinAnalysis(data.skinAnalysis);
       setSkinTone(data.skinTone);
+      setBeautyProfile(data.beautyProfile);
       setRecommendation(data.recommendation);
       setIsAnalyzing(false);
 
@@ -111,6 +139,7 @@ export default function MirrorCheckHome() {
 
   return (
     <main className="min-h-screen bg-stone-50 pb-20 text-stone-900 selection:bg-amber-100 selection:text-amber-900">
+      <CartDrawer />
       {/* Top Navigation & Status */}
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -137,6 +166,7 @@ export default function MirrorCheckHome() {
               <Shirt className="w-3.5 h-3.5 text-amber-700" />
               {showCloset ? 'Hide Wardrobe Vault' : 'View Wardrobe Vault (20 Items)'}
             </button>
+            <HeaderCartButton />
           </div>
         </div>
       </header>
@@ -149,7 +179,15 @@ export default function MirrorCheckHome() {
       {/* Wardrobe Modal / Shelf */}
       {showCloset && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          <ClosetShelf />
+          <ClosetShelf
+            beautyProfile={beautyProfile || undefined}
+            onApplyGeneratedLook={(effects) => {
+              if (effects && effects.length > 0) {
+                // If user generates look from closet, alert or refresh
+                console.log('Applied generated look effects:', effects);
+              }
+            }}
+          />
         </div>
       )}
 
@@ -182,7 +220,7 @@ export default function MirrorCheckHome() {
                   Orchestrate Harmonized Look
                 </h3>
                 <p className="text-xs text-stone-500 leading-relaxed">
-                  Synthesizes your 14 clinical skin concerns, skin undertone, local atmospheric UV/humidity, and your digital closet into one unified recommendation.
+                  Runs 4 parallel YouCam AI engines (Skin Analysis + Fitzpatrick Scale + Facial Color Tones + Facial Geometry) with local atmospheric defense.
                 </p>
               </div>
 
@@ -240,6 +278,11 @@ export default function MirrorCheckHome() {
                 <span className="text-xs text-stone-500 capitalize">
                   {selectedVibe} Vibe Profile
                 </span>
+                {beautyProfile?.fitzpatrick && (
+                  <span className="text-xs font-mono font-medium text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full border border-stone-200">
+                    {beautyProfile.fitzpatrick.label}
+                  </span>
+                )}
               </div>
               <h2 className="text-2xl font-bold text-stone-900 mt-1.5 tracking-tight">
                 Harmonized Look &amp; Skin Strategy
@@ -263,13 +306,15 @@ export default function MirrorCheckHome() {
             </div>
           </div>
 
-          {/* 2. Three Pillars Explanation Card */}
+          {/* 2. Three Pillars Explanation Card (Includes Facial Architecture + Skin Simulation) */}
           <ExplanationCard
             skin={skinAnalysis}
             skinTone={skinTone}
             weather={weather || generateMockWeather()}
             vibe={selectedVibe}
             explanation={recommendation.explanation}
+            beautyProfile={beautyProfile || undefined}
+            userImageUrl={selectedSelfie || undefined}
           />
 
           {/* 3. Personalized Skincare Routine (With Conflict Protection) */}
@@ -286,6 +331,7 @@ export default function MirrorCheckHome() {
               renderedImageUrl={makeupResultUrl}
               isRendering={isRendering}
               originalSelfieUrl={selectedSelfie}
+              beautyProfile={beautyProfile || undefined}
             />
 
             <OutfitPreview
@@ -296,12 +342,33 @@ export default function MirrorCheckHome() {
             />
           </div>
 
-          {/* 5. Wardrobe Gap-Fill & Smart Cross-Sell Shelf */}
+          {/* 5. Feature 1.4: Celebrity Look Archetypes & AI Makeup Transfer */}
+          <CelebrityLookPanel
+            userImageUrl={selectedSelfie || undefined}
+            beautyProfile={beautyProfile || undefined}
+            selectedVibe={selectedVibe}
+          />
+
+          {/* 6. Feature 1.6: AI Trichology Diagnostics, Haircut & Color VTO */}
+          <HairAnalysisPanel
+            userImageUrl={selectedSelfie || undefined}
+            beautyProfile={beautyProfile || undefined}
+          />
+
+          {/* 7. Wardrobe Gap-Fill & Smart Cross-Sell Shelf */}
           {recommendation.gapFillSuggestions && recommendation.gapFillSuggestions.length > 0 && (
             <GapFillShelf suggestions={recommendation.gapFillSuggestions} />
           )}
         </div>
       )}
     </main>
+  );
+}
+
+export default function MirrorCheckHome() {
+  return (
+    <CartProvider>
+      <MirrorCheckContent />
+    </CartProvider>
   );
 }

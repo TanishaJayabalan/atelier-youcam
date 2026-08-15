@@ -116,10 +116,12 @@ export function generateRecommendation(input: {
   const skincareItems = ownedCloset.filter((i) => i.category === 'skincare');
   
   const hasAcne = (skin.concerns.acne?.score || 0) >= 28 || skin.concerns.acne?.severity === 'high' || skin.concerns.acne?.severity === 'moderate';
-  const hasHighRedness = (skin.concerns.redness?.score || 0) >= 40 || skin.concerns.redness?.severity === 'high';
+  const hasHighRedness = (skin.concerns.redness?.score || 0) >= 32 || skin.concerns.redness?.severity !== 'low' || skin.skinType === 'sensitive';
   const hasHighOiliness = (skin.concerns.oiliness?.score || 0) >= 40 || skin.skinType === 'oily';
   const hasHighDryness = (skin.concerns.dryness?.score || 0) >= 40 || skin.skinType === 'dry';
   const hasDarkCircles = (skin.concerns.dark_circles?.score || 0) >= 35 || skin.concerns.dark_circle?.severity === 'high';
+
+  const spf = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'spf');
 
   // Specific clinical alert banners
   if (hasAcne) {
@@ -136,13 +138,27 @@ export function generateRecommendation(input: {
     warnings.push(
       `High UV Index (${weather.uvIndex}): Direct UV exposure is intense today. Mineral SPF 50+ reapplication every 2 hours is required.`
     );
+    if (!spf) {
+      gapFills.push({
+        category: 'Skincare (SPF)',
+        suggestedProduct: 'Invisible Shield Daily Mineral SPF 50',
+        reason: `Direct UV Index (${weather.uvIndex}) is high today. Broad-spectrum mineral sunscreen is required for photo-aging defense.`,
+        urgency: 'high',
+      });
+    }
   }
 
   const amSteps: SkincareStepRec[] = [];
   const pmSteps: SkincareStepRec[] = [];
 
-  // Helper product finders by active ingredients & category
-  const cleanser = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'cleanser');
+  // Dynamic product selection by skin type & weather suitability
+  const cleansers = skincareItems.filter((i) => (i.metadata as SkincareMetadata)?.step_category === 'cleanser');
+  const cleanser =
+    (hasHighOiliness
+      ? cleansers.find((c) => (c.metadata as SkincareMetadata)?.texture === 'foam')
+      : cleansers.find((c) => (c.metadata as SkincareMetadata)?.texture === 'fluid' || (c.metadata as SkincareMetadata)?.texture === 'cream')) ||
+    cleansers[0];
+
   const bhaItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('salicylic') || a.includes('bha')));
   const niacinamideItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('niacinamide') || a.includes('zinc')));
   const centellaItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('centella') || a.includes('madecassoside')));
@@ -150,8 +166,13 @@ export function generateRecommendation(input: {
   const vitCItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('vitamin_c')));
   const retinolItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('retinol')));
   const caffeineItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('caffeine') || a.includes('egcg')));
-  const moisturizer = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'moisturizer');
-  const spf = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'spf');
+
+  const moisturizers = skincareItems.filter((i) => (i.metadata as SkincareMetadata)?.step_category === 'moisturizer');
+  const moisturizer =
+    (hasHighOiliness || weather.tempC >= 26
+      ? moisturizers.find((m) => (m.metadata as SkincareMetadata)?.texture === 'gel')
+      : moisturizers.find((m) => (m.metadata as SkincareMetadata)?.texture === 'cream')) ||
+    moisturizers[0];
 
   // ==================== AM ROUTINE ====================
   if (cleanser) {
@@ -160,7 +181,9 @@ export function generateRecommendation(input: {
       product: cleanser,
       productName: cleanser.name,
       timing: 'AM',
-      actionNote: 'Gentle morning cleanse to refresh skin without stripping lipid barrier.',
+      actionNote: hasHighOiliness
+        ? `Foaming cleanse tailored to your ${skin.skinType} skin to clarify sebum excess.`
+        : `Gentle morning cleanse tailored for ${skin.skinType} skin to refresh without stripping your barrier.`,
     });
   }
 
@@ -221,9 +244,11 @@ export function generateRecommendation(input: {
       product: moisturizer,
       productName: moisturizer.name,
       timing: 'AM',
-      actionNote: hasHighDryness
-        ? 'Deep lipid replenishment to seal flakiness.'
-        : 'Light layer to maintain hydration under makeup.',
+      actionNote: weather.tempC >= 26
+        ? `Lightweight gel moisture for warm weather (${weather.tempC}°C) to prevent shine under makeup.`
+        : hasHighDryness
+        ? 'Deep lipid replenishment to seal skin moisture barrier.'
+        : 'Balancing layer to maintain hydration under makeup.',
     });
   }
 

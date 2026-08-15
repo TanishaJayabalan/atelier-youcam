@@ -105,10 +105,10 @@ export function rgbToHex(r: number, g: number, b: number): string {
 export function computeRealSkinAnalysis(telemetry: OpticalTelemetry): SkinAnalysisResult {
   const { rednessRatio, specularRatio, roughnessVariance, luminance, blemishDensity = 0 } = telemetry;
 
-  // Clinical Erythema index based on R/G ratio
+  // Clinical Erythema index based on R/G ratio & blemish spot density
   const rgRatio = rednessRatio > 0 ? rednessRatio : 1.25;
-  let rednessScore = Math.round(Math.max(10, Math.min(95, (rgRatio - 1.15) * 160)));
-  if (isNaN(rednessScore) || rednessScore < 10) rednessScore = 22;
+  let rednessScore = Math.round(Math.max(15, Math.min(95, (rgRatio - 1.18) * 350 + blemishDensity * 450)));
+  if (isNaN(rednessScore) || rednessScore < 15) rednessScore = 24;
 
   // Oiliness based on specular highlight density
   let oilinessScore = Math.round(Math.max(10, Math.min(90, specularRatio * 180 + 15)));
@@ -119,7 +119,7 @@ export function computeRealSkinAnalysis(telemetry: OpticalTelemetry): SkinAnalys
   let poresScore = Math.round(Math.max(15, Math.min(85, textureScore * 0.75 + oilinessScore * 0.25)));
 
   // Blemish & Acne Score directly derived from localized high-contrast red spot clusters
-  let acneScore = Math.round(Math.max(10, Math.min(95, blemishDensity * 550 + rednessScore * 0.35 + textureScore * 0.25)));
+  let acneScore = Math.round(Math.max(15, Math.min(95, blemishDensity * 750 + rednessScore * 0.45 + textureScore * 0.25)));
 
   // Dryness inverse to sebum and hydration
   let drynessScore = Math.round(Math.max(10, Math.min(85, 75 - oilinessScore * 0.7)));

@@ -1,14 +1,17 @@
 'use client';
 
 import React from 'react';
-import { ShoppingBag, AlertCircle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, AlertCircle, PlusCircle } from 'lucide-react';
 import { GapFillSuggestion } from '@/lib/recommendation-engine';
+import { useCart } from './CartContext';
 
 interface GapFillShelfProps {
   suggestions: GapFillSuggestion[];
 }
 
 export default function GapFillShelf({ suggestions }: GapFillShelfProps) {
+  const { addToCart } = useCart();
+
   if (!suggestions || suggestions.length === 0) return null;
 
   return (
@@ -66,10 +69,18 @@ export default function GapFillShelf({ suggestions }: GapFillShelfProps) {
               </span>
               <button
                 type="button"
-                onClick={() => alert(`Added "${item.suggestedProduct}" to your shopping wishlist!`)}
-                className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 flex items-center gap-0.5 cursor-pointer"
+                onClick={() =>
+                  addToCart({
+                    name: item.suggestedProduct,
+                    category: item.category,
+                    reason: item.reason,
+                    brand: 'Mirror Pick',
+                  })
+                }
+                className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-lg border border-amber-200 flex items-center gap-1 cursor-pointer transition-all"
               >
-                Add to Wishlist <ArrowUpRight className="w-3.5 h-3.5" />
+                <PlusCircle className="w-3.5 h-3.5" />
+                Add to Cart
               </button>
             </div>
           </div>

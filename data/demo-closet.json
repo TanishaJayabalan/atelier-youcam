@@ -373,5 +373,33 @@
       "timing": "both",
       "texture": "fluid"
     }
+  },
+  {
+    "id": "closet_skincare_11",
+    "category": "skincare",
+    "name": "Oil-Control Foaming Cleanser",
+    "brand": "La Roche-Posay",
+    "image_url": "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "cleanser",
+      "active_ingredients": ["zinc_pca", "salicylic_acid"],
+      "timing": "both",
+      "texture": "foam"
+    }
+  },
+  {
+    "id": "closet_skincare_12",
+    "category": "skincare",
+    "name": "Weightless Water Gel Moisturizer",
+    "brand": "Neutrogena Hydro Boost",
+    "image_url": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "moisturizer",
+      "active_ingredients": ["hyaluronic_acid", "glycerin"],
+      "timing": "both",
+      "texture": "gel"
+    }
   }
 ]
