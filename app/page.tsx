@@ -1,69 +1,307 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState } from 'react';
+import { Sparkles, ArrowRight, RefreshCw, Shirt, ShieldAlert } from 'lucide-react';
+import SelfieCapture from '@/components/SelfieCapture';
+import VibePicker, { VibeType } from '@/components/VibePicker';
+import WeatherBar from '@/components/WeatherBar';
+import ClosetShelf from '@/components/ClosetShelf';
+import ExplanationCard from '@/components/ExplanationCard';
+import SkincareRoutineCard from '@/components/SkincareRoutineCard';
+import MakeupPreview from '@/components/MakeupPreview';
+import OutfitPreview from '@/components/OutfitPreview';
+import GapFillShelf from '@/components/GapFillShelf';
+import { WeatherResult, generateMockWeather } from '@/lib/weather';
+import { Recommendation } from '@/lib/recommendation-engine';
+import { SkinAnalysisResult } from '@/lib/youcam/skin-analysis';
+import { SkinToneResult } from '@/lib/youcam/skin-tone';
+import { OpticalTelemetry } from '@/lib/image-analysis';
+
+export default function MirrorCheckHome() {
+  // Input states
+  const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
+  const [opticalTelemetry, setOpticalTelemetry] = useState<OpticalTelemetry | null>(null);
+  const [selectedVibe, setSelectedVibe] = useState<VibeType>('classy');
+  const [weather, setWeather] = useState<WeatherResult | null>(null);
+  const [showCloset, setShowCloset] = useState(false);
+
+  // Execution states
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Result states
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [skinAnalysis, setSkinAnalysis] = useState<SkinAnalysisResult | null>(null);
+  const [skinTone, setSkinTone] = useState<SkinToneResult | null>(null);
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [makeupResultUrl, setMakeupResultUrl] = useState<string | null>(null);
+  const [outfitResultUrl, setOutfitResultUrl] = useState<string | null>(null);
+
+  const hasResults = Boolean(recommendation && skinAnalysis && skinTone);
+
+  // Stage 1 & Stage 2 Execution
+  const handleAnalyzeAndRender = async () => {
+    if (!selectedSelfie) {
+      alert('Please upload or snap a portrait selfie first.');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setErrorMessage(null);
+    setRecommendation(null);
+    setMakeupResultUrl(null);
+    setOutfitResultUrl(null);
+
+    try {
+      // Stage 1: Fast Analysis with client-extracted optical telemetry
+      const res = await fetch('/api/youcam/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selfieBase64: selectedSelfie,
+          vibe: selectedVibe,
+          weather,
+          telemetry: opticalTelemetry,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to analyze selfie.');
+      }
+
+      setSessionId(data.sessionId);
+      setSkinAnalysis(data.skinAnalysis);
+      setSkinTone(data.skinTone);
+      setRecommendation(data.recommendation);
+      setIsAnalyzing(false);
+
+      // Smooth scroll to results
+      setTimeout(() => {
+        const resultsEl = document.getElementById('mirror-results-section');
+        resultsEl?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+
+      // Stage 2: Parallel Try-On Render (Makeup + Clothes)
+      setIsRendering(true);
+      const renderRes = await fetch('/api/youcam/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: data.sessionId,
+          selfieBase64: selectedSelfie,
+          makeupSteps: data.recommendation.makeupSteps,
+          outfitItem: data.recommendation.outfit.topOrDress || null,
+        }),
+      });
+
+      const renderData = await renderRes.json();
+      if (renderData.success) {
+        setMakeupResultUrl(renderData.makeupResultUrl);
+        setOutfitResultUrl(renderData.outfitResultUrl);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An unexpected error occurred during analysis.');
+    } finally {
+      setIsAnalyzing(false);
+      setIsRendering(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen bg-stone-50 pb-20 text-stone-900 selection:bg-amber-100 selection:text-amber-900">
+      {/* Top Navigation & Status */}
+      <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-700 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+              M
+            </div>
+            <div>
+              <span className="font-semibold tracking-tight text-stone-950 text-base">
+                MIRROR CHECK
+              </span>
+              <span className="text-[10px] text-amber-800 font-mono ml-2 px-1.5 py-0.5 bg-amber-50 rounded border border-amber-200">
+                YouCam AI Atelier
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowCloset(!showCloset)}
+              className="text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl border border-stone-200 flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <Shirt className="w-3.5 h-3.5 text-amber-700" />
+              {showCloset ? 'Hide Wardrobe Vault' : 'View Wardrobe Vault (20 Items)'}
+            </button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+      </header>
+
+      {/* Atmospheric Real-Time Context Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <WeatherBar weather={weather} onWeatherLoaded={(w: WeatherResult) => setWeather(w)} />
+      </div>
+
+      {/* Wardrobe Modal / Shelf */}
+      {showCloset && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          <ClosetShelf />
+        </div>
+      )}
+
+      {/* Input Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left: Selfie / Portrait Selector */}
+          <div className="lg:col-span-7">
+            <SelfieCapture
+              selectedSelfie={selectedSelfie}
+              onSelfieSelected={(base64, telemetry) => {
+                setSelectedSelfie(base64);
+                setOpticalTelemetry(telemetry || null);
+              }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+
+          {/* Right: Vibe Selector & Trigger */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            <VibePicker
+              selectedVibe={selectedVibe}
+              onSelectVibe={(vibe: VibeType) => setSelectedVibe(vibe)}
+            />
+
+            {/* Main Action Trigger Card */}
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-stone-900 mb-1 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-700" />
+                  Orchestrate Harmonized Look
+                </h3>
+                <p className="text-xs text-stone-500 leading-relaxed">
+                  Synthesizes your 14 clinical skin concerns, skin undertone, local atmospheric UV/humidity, and your digital closet into one unified recommendation.
+                </p>
+              </div>
+
+              {errorMessage && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleAnalyzeAndRender}
+                disabled={isAnalyzing || isRendering || !selectedSelfie}
+                className={`mt-5 w-full py-3.5 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm ${
+                  isAnalyzing || isRendering
+                    ? 'bg-amber-700/80 text-white cursor-not-allowed'
+                    : !selectedSelfie
+                    ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                    : 'bg-amber-700 hover:bg-amber-800 text-white active:scale-[0.99] shadow-amber-900/10'
+                }`}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Analyzing Facial Canvas &amp; Clinical Concerns...</span>
+                  </>
+                ) : isRendering ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Fitting Wardrobe &amp; Virtual Makeup...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Generate My Personalized Daily Look</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Results Workspace Section */}
+      {hasResults && skinAnalysis && skinTone && recommendation && (
+        <div id="mirror-results-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-8">
+          {/* 1. Header Summary Banner */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 pb-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full">
+                  Daily Mirror Check Summary
+                </span>
+                <span className="text-xs text-stone-500 capitalize">
+                  {selectedVibe} Vibe Profile
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold text-stone-900 mt-1.5 tracking-tight">
+                Harmonized Look &amp; Skin Strategy
+              </h2>
+            </div>
+
+            {/* Vitality Badge */}
+            <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-stone-200 shadow-xs self-start md:self-auto">
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-bold text-stone-400 block">
+                  Overall Vitality
+                </span>
+                <span className="text-xl font-bold text-stone-900 leading-none">
+                  {skinAnalysis.overallScore}
+                  <span className="text-xs font-normal text-stone-400">/100</span>
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-700 text-white flex items-center justify-center font-bold text-xs capitalize">
+                {skinAnalysis.skinType.slice(0, 4)}
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Three Pillars Explanation Card */}
+          <ExplanationCard
+            skin={skinAnalysis}
+            skinTone={skinTone}
+            weather={weather || generateMockWeather()}
+            vibe={selectedVibe}
+            explanation={recommendation.explanation}
+          />
+
+          {/* 3. Personalized Skincare Routine (With Conflict Protection) */}
+          <SkincareRoutineCard
+            warnings={recommendation.skincareNotes.warnings}
+            amSteps={recommendation.skincareNotes.amSteps}
+            pmSteps={recommendation.skincareNotes.pmSteps}
+          />
+
+          {/* 4. Two-Column Virtual Try-On Stage (Makeup VTO + Wardrobe Styling) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <MakeupPreview
+              makeupSteps={recommendation.makeupSteps}
+              renderedImageUrl={makeupResultUrl}
+              isRendering={isRendering}
+              originalSelfieUrl={selectedSelfie}
+            />
+
+            <OutfitPreview
+              outfit={recommendation.outfit}
+              renderedImageUrl={outfitResultUrl}
+              isRendering={isRendering}
+              originalSelfieUrl={selectedSelfie}
+            />
+          </div>
+
+          {/* 5. Wardrobe Gap-Fill & Smart Cross-Sell Shelf */}
+          {recommendation.gapFillSuggestions && recommendation.gapFillSuggestions.length > 0 && (
+            <GapFillShelf suggestions={recommendation.gapFillSuggestions} />
+          )}
+        </div>
+      )}
+    </main>
   );
 }

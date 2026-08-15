@@ -1,0 +1,377 @@
+[
+  {
+    "id": "closet_top_1",
+    "category": "outfit_top",
+    "name": "Silk Crepe Tailored Blouse",
+    "brand": "Reformation",
+    "image_url": "https://images.unsplash.com/photo-1551803091-e20673f15770?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Ivory Cream",
+      "color_hex": "#FDFBF7",
+      "weather_tags": ["warm", "cool"],
+      "fabric": "100% Silk"
+    }
+  },
+  {
+    "id": "closet_top_2",
+    "category": "outfit_top",
+    "name": "Linen Relaxed Resort Shirt",
+    "brand": "Everlane",
+    "image_url": "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Sage Olive",
+      "color_hex": "#708238",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Pure Linen"
+    }
+  },
+  {
+    "id": "closet_top_3",
+    "category": "outfit_top",
+    "name": "Asymmetrical Sculpted Bodysuit",
+    "brand": "Khaite",
+    "image_url": "https://images.unsplash.com/photo-1618244972963-dbee1a7edc95?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Onyx Black",
+      "color_hex": "#1B1B1B",
+      "weather_tags": ["warm", "cool"],
+      "fabric": "Ribbed Matte Jersey"
+    }
+  },
+  {
+    "id": "closet_bottom_1",
+    "category": "outfit_bottom",
+    "name": "High-Waist Pleated Wide-Leg Trousers",
+    "brand": "COS",
+    "image_url": "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Warm Camel",
+      "color_hex": "#C19A6B",
+      "weather_tags": ["warm", "cool", "cold"],
+      "fabric": "Wool-Blend Twill"
+    }
+  },
+  {
+    "id": "closet_bottom_2",
+    "category": "outfit_bottom",
+    "name": "Straight-Leg Raw Denim Jeans",
+    "brand": "Toteme",
+    "image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Indigo Blue",
+      "color_hex": "#264366",
+      "weather_tags": ["cool", "cold", "rain", "warm"],
+      "fabric": "Rigid Organic Cotton"
+    }
+  },
+  {
+    "id": "closet_dress_1",
+    "category": "outfit_dress",
+    "name": "Backless Satin Slip Midi Dress",
+    "brand": "Bec + Bridge",
+    "image_url": "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Emerald Jewel",
+      "color_hex": "#097969",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Gloss Satin"
+    }
+  },
+  {
+    "id": "closet_dress_2",
+    "category": "outfit_dress",
+    "name": "Architectural Cutout Maxi Gown",
+    "brand": "Cult Gaia",
+    "image_url": "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Magenta Plum",
+      "color_hex": "#8E2800",
+      "weather_tags": ["warm", "hot"],
+      "fabric": "Structured Knit"
+    }
+  },
+  {
+    "id": "closet_dress_3",
+    "category": "outfit_dress",
+    "name": "Tiered Organic Cotton Poplin Sundress",
+    "brand": "Staud",
+    "image_url": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Butter Yellow",
+      "color_hex": "#FFFDD0",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Crisp Cotton Poplin"
+    }
+  },
+  {
+    "id": "closet_outer_1",
+    "category": "outfit_outer",
+    "name": "Double-Breasted Wool Oversized Blazer",
+    "brand": "The Frankie Shop",
+    "image_url": "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Espresso Brown",
+      "color_hex": "#3D2B1F",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "100% Virgin Wool"
+    }
+  },
+  {
+    "id": "closet_outer_2",
+    "category": "outfit_outer",
+    "name": "Water-Repellent Minimalist Trench Coat",
+    "brand": "Arket",
+    "image_url": "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Sandstone Khaki",
+      "color_hex": "#D2B48C",
+      "weather_tags": ["rain", "cool", "cold"],
+      "fabric": "Treated Cotton Gabardine"
+    }
+  },
+  {
+    "id": "closet_makeup_1",
+    "category": "makeup",
+    "name": "Luminous Silk Foundation",
+    "brand": "Armani Beauty",
+    "image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "foundation",
+      "shade_hex": "#DFAC82",
+      "shade_name": "5.75 Warm Medium",
+      "finish": "dewy",
+      "coverage": "medium"
+    }
+  },
+  {
+    "id": "closet_makeup_2",
+    "category": "makeup",
+    "name": "Soft Pinch Liquid Blush (Joy)",
+    "brand": "Rare Beauty",
+    "image_url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "blush",
+      "shade_hex": "#E89078",
+      "shade_name": "Muted Peach Coral",
+      "finish": "dewy"
+    }
+  },
+  {
+    "id": "closet_makeup_3",
+    "category": "makeup",
+    "name": "Matte Revolution Lipstick (Walk of No Shame)",
+    "brand": "Charlotte Tilbury",
+    "image_url": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "lip",
+      "shade_hex": "#B85D43",
+      "shade_name": "Berry Rose Terracotta",
+      "finish": "matte"
+    }
+  },
+  {
+    "id": "closet_makeup_4",
+    "category": "makeup",
+    "name": "Gloss Bomb Universal Lip Luminizer (Fenty Glow)",
+    "brand": "Fenty Beauty",
+    "image_url": "https://images.unsplash.com/photo-1631730486784-5456119f69ae?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "lip",
+      "shade_hex": "#C97A63",
+      "shade_name": "Shimmering Rose Nude",
+      "finish": "glossy"
+    }
+  },
+  {
+    "id": "closet_makeup_5",
+    "category": "makeup",
+    "name": "Master Mattes Eyeshadow Palette",
+    "brand": "Makeup by Mario",
+    "image_url": "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "eyeshadow",
+      "shade_hex": "#C19A6B",
+      "shade_name": "Warm Golden Ochre",
+      "finish": "matte"
+    }
+  },
+  {
+    "id": "closet_makeup_6",
+    "category": "makeup",
+    "name": "Brow Wiz Micro-Fine Precision Pencil",
+    "brand": "Anastasia Beverly Hills",
+    "image_url": "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "eyebrow",
+      "shade_hex": "#422B1E",
+      "shade_name": "Soft Brown",
+      "finish": "matte"
+    }
+  },
+  {
+    "id": "closet_skincare_1",
+    "category": "skincare",
+    "name": "Gentle Barrier Hydrating Cleanser",
+    "brand": "CeraVe",
+    "image_url": "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "cleanser",
+      "active_ingredients": ["ceramides", "hyaluronic_acid"],
+      "timing": "both",
+      "texture": "fluid"
+    }
+  },
+  {
+    "id": "closet_skincare_2",
+    "category": "skincare",
+    "name": "0.5% Pure Retinol Complex Night Serum",
+    "brand": "SkinCeuticals",
+    "image_url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["retinol", "bisabolol"],
+      "timing": "PM",
+      "texture": "fluid"
+    }
+  },
+  {
+    "id": "closet_skincare_3",
+    "category": "skincare",
+    "name": "Centella Asiatica Soothing Barrier Ampoule",
+    "brand": "Skin1004",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "treatment",
+      "active_ingredients": ["centella_asiatica", "madecassoside"],
+      "timing": "both",
+      "texture": "gel"
+    }
+  },
+  {
+    "id": "closet_skincare_4",
+    "category": "skincare",
+    "name": "Barrier+ Lipid Peptide Cream",
+    "brand": "Skinfix",
+    "image_url": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "moisturizer",
+      "active_ingredients": ["ceramides", "peptides", "squalane"],
+      "timing": "both",
+      "texture": "cream"
+    }
+  },
+  {
+    "id": "closet_skincare_5",
+    "category": "skincare",
+    "name": "Invisible Shield Daily Mineral SPF 50",
+    "brand": "Supergoop!",
+    "image_url": "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "spf",
+      "active_ingredients": ["zinc_oxide", "vitamin_e"],
+      "timing": "AM",
+      "texture": "fluid"
+    }
+  },
+  {
+    "id": "closet_skincare_6",
+    "category": "skincare",
+    "name": "2% BHA Salicylic Acid Liquid Exfoliant",
+    "brand": "Paula's Choice",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "treatment",
+      "active_ingredients": ["salicylic_acid", "green_tea"],
+      "timing": "PM",
+      "texture": "fluid"
+    }
+  },
+  {
+    "id": "closet_skincare_7",
+    "category": "skincare",
+    "name": "Niacinamide 10% + Zinc 1% Blemish Control Serum",
+    "brand": "The Ordinary",
+    "image_url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["niacinamide", "zinc_pca"],
+      "timing": "both",
+      "texture": "fluid"
+    }
+  },
+  {
+    "id": "closet_skincare_8",
+    "category": "skincare",
+    "name": "Multi-Molecular Hyaluronic Acid Serum",
+    "brand": "The INKEY List",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["hyaluronic_acid", "polyglutamic_acid"],
+      "timing": "both",
+      "texture": "fluid"
+    }
+  },
+  {
+    "id": "closet_skincare_9",
+    "category": "skincare",
+    "name": "C.E.O. 15% Vitamin C Brightening Serum",
+    "brand": "Sunday Riley",
+    "image_url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["vitamin_c", "phytosterols"],
+      "timing": "AM",
+      "texture": "fluid"
+    }
+  },
+  {
+    "id": "closet_skincare_10",
+    "category": "skincare",
+    "name": "Caffeine Solution 5% + EGCG Eye Contour",
+    "brand": "The Ordinary",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "treatment",
+      "active_ingredients": ["caffeine", "egcg"],
+      "timing": "both",
+      "texture": "fluid"
+    }
+  }
+]
