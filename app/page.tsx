@@ -43,7 +43,7 @@ function HeaderCartButton() {
   );
 }
 
-export function MirrorCheckContent() {
+function MirrorCheckContent() {
   // Input states
   const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
   const [opticalTelemetry, setOpticalTelemetry] = useState<OpticalTelemetry | null>(null);

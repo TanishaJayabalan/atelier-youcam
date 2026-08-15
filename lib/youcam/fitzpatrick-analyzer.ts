@@ -97,6 +97,7 @@ export async function analyzeFitzpatrickScale(
     const taskId = await runTask('/s2s/v2.0/task/fitzpatrick-scale-analyzer', {
       src_file_id: fileId.startsWith('http') ? undefined : fileId,
       src_file_url: fileId.startsWith('http') ? fileId : undefined,
+      version: '1.0',
     });
 
     const result = await pollTask<any>('/s2s/v2.0/task/fitzpatrick-scale-analyzer', taskId, {

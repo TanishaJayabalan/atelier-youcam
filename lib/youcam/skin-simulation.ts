@@ -62,8 +62,8 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
-  if (skin.concerns.pore || skin.concerns.pores) {
-    const raw = skin.concerns.pore?.score || skin.concerns.pores?.score || 70;
+  if (skin.concerns.pores) {
+    const raw = skin.concerns.pores.score;
     const intensity = mapScore(raw);
     params.pores = Number(intensity.toFixed(2));
     projected.push({
@@ -129,7 +129,8 @@ export async function simulateSkinOutcome(
     const taskId = await runTask('/s2s/v2.0/task/skin-simulation', {
       src_file_id: fileId.startsWith('http') ? undefined : fileId,
       src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      ...params,
+      version: 1.0,
+      dst_actions: params,
     });
 
     const result = await pollTask<any>('/s2s/v2.0/task/skin-simulation', taskId, {

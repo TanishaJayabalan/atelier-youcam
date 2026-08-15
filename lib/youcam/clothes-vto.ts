@@ -81,7 +81,7 @@ export async function applyOutfit(
   try {
     // Step 1: Upload selfie image (person source)
     const personFileId = await uploadFile(
-      '/s2s/v2.0/file',
+      '/s2s/v1.0/file/skin-analysis',
       selfieBuffer,
       selfieContentType,
       'selfie_person.jpg'
@@ -97,7 +97,7 @@ export async function applyOutfit(
         }
         const arrayBuf = await fetchRes.arrayBuffer();
         garmentFileId = await uploadFile(
-          '/s2s/v2.0/file',
+          '/s2s/v1.0/file/skin-analysis',
           Buffer.from(arrayBuf),
           garmentContentType,
           'garment.jpg'
@@ -107,7 +107,7 @@ export async function applyOutfit(
       }
     } else {
       garmentFileId = await uploadFile(
-        '/s2s/v2.0/file',
+        '/s2s/v1.0/file/skin-analysis',
         garmentBufferOrUrl,
         garmentContentType,
         'garment.jpg'

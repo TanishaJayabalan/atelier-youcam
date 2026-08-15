@@ -195,34 +195,24 @@ export async function analyzeSkin(
       'selfie_skin_analysis.jpg'
     );
 
-    const taskId = await runTask('/s2s/v1.0/task/skin-analysis', {
-      file_sets: {
-        src_ids: [fileId],
-      },
-      actions: [
-        {
-          id: 0,
-          dst_actions: [
-            'wrinkle',
-            'pore',
-            'texture',
-            'acne',
-            'redness',
-            'oiliness',
-            'moisture',
-            'radiance',
-            'firmness',
-            'age_spot',
-            'eye_bag',
-            'droopy_upper_eyelid',
-            'droopy_lower_eyelid',
-            'dark_circle_v2',
-          ],
-        },
+    const taskId = await runTask('/s2s/v2.0/task/skin-analysis', {
+      src_file_id: fileId,
+      dst_actions: [
+        'skin_type',
+        'texture',
+        'redness',
+        'oiliness',
+        'moisture',
+        'pore',
+        'radiance',
+        'firmness',
+        'droopy_upper_eyelid',
+        'droopy_lower_eyelid',
+        'acne',
       ],
     });
 
-    const rawResult = await pollTask('/s2s/v1.0/task/skin-analysis', taskId, {
+    const rawResult = await pollTask('/s2s/v2.0/task/skin-analysis', taskId, {
       timeoutMs: 35000,
       mockResultGenerator: () => generateMockSkinAnalysis(selfieBuffer, telemetry),
     });

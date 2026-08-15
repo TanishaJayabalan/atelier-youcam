@@ -11,19 +11,24 @@ interface SelfieCaptureProps {
 
 const SAMPLE_SELFIES = [
   {
+    id: 'sample_acne',
+    label: '🎯 Active Blemishes & Texture (75% Face Coverage)',
+    url: 'https://images.unsplash.com/photo-1597223557154-721c1cecc4b0?auto=format&fit=crop&w=800&q=80',
+  },
+  {
     id: 'sample_1',
-    label: 'Studio Portrait (Warm Glow)',
-    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    label: 'Studio Portrait (Warm Golden Tone)',
+    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
   },
   {
     id: 'sample_2',
-    label: 'Natural Daylight (Neutral)',
-    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80',
+    label: 'Natural Daylight (Neutral Undertone)',
+    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80',
   },
   {
     id: 'sample_3',
-    label: 'Clear Editorial (Cool Rose)',
-    url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80',
+    label: 'Deep Melanin (Rich Radiance)',
+    url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80',
   },
 ];
 
@@ -116,6 +121,67 @@ function analyzeCanvasPixels(canvas: HTMLCanvasElement): OpticalTelemetry {
   };
 }
 
+/**
+ * Automatically detects the face boundary and produces an optimal, high-density portrait crop
+ * so YouCam's internal AI face detector evaluates face area as > 70% and never triggers error_src_face_too_small.
+ */
+function createOptimalFaceFramedSelfie(canvas: HTMLCanvasElement): { base64: string; telemetry: OpticalTelemetry } {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const telemetry = analyzeCanvasPixels(canvas);
+
+  if (!ctx) {
+    return { base64: canvas.toDataURL('image/jpeg', 0.95), telemetry };
+  }
+
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+
+  let minX = w, maxX = 0, minY = h, maxY = 0;
+  let count = 0;
+
+  for (let y = 0; y < h; y += 8) {
+    for (let x = 0; x < w; x += 8) {
+      const idx = (y * w + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      if (r > 60 && g > 35 && b > 20 && r > g && r > b && (r - g) >= 12) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        count++;
+      }
+    }
+  }
+
+  const faceW = maxX - minX;
+  const faceH = maxY - minY;
+  const faceAreaRatio = (faceW * faceH) / (w * h);
+
+  // If face takes up less than 65% of the frame, crop tightly around face with 20% margin
+  if (count > 80 && faceAreaRatio < 0.65 && faceW > 40 && faceH > 40) {
+    const margin = Math.max(faceW, faceH) * 0.22;
+    const cropX = Math.max(0, minX - margin);
+    const cropY = Math.max(0, minY - margin * 0.85);
+    const cropW = Math.min(w - cropX, faceW + margin * 2);
+    const cropH = Math.min(h - cropY, faceH + margin * 2);
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = 800;
+    outCanvas.height = 800;
+    const outCtx = outCanvas.getContext('2d');
+    if (outCtx) {
+      outCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, 800, 800);
+      return { base64: outCanvas.toDataURL('image/jpeg', 0.95), telemetry };
+    }
+  }
+
+  return { base64: canvas.toDataURL('image/jpeg', 0.95), telemetry };
+}
+
 export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: SelfieCaptureProps) {
   const [sourceType, setSourceType] = useState<'camera' | 'upload' | 'samples'>('camera');
   const [cameraActive, setCameraActive] = useState(false);
@@ -135,10 +201,10 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
       const blob = await res.blob();
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64 = reader.result as string;
+        const rawBase64 = reader.result as string;
         setCapturedFromCamera(false);
 
-        // Analyze image telemetry
+        // Analyze image telemetry & auto-frame face
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
@@ -148,13 +214,13 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0);
-            const telemetry = analyzeCanvasPixels(canvas);
+            const { base64, telemetry } = createOptimalFaceFramedSelfie(canvas);
             onSelfieSelected(base64, telemetry);
           } else {
-            onSelfieSelected(base64);
+            onSelfieSelected(rawBase64);
           }
         };
-        img.src = base64;
+        img.src = rawBase64;
       };
       reader.readAsDataURL(blob);
     } catch (e) {
@@ -226,10 +292,8 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
       ctx.translate(width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, width, height);
-      const base64 = canvas.toDataURL('image/jpeg', 0.95);
-
-      // Extract real optical telemetry directly from this live camera frame
-      const telemetry = analyzeCanvasPixels(canvas);
+      // Extract real optical telemetry & auto-frame face tightly for YouCam
+      const { base64, telemetry } = createOptimalFaceFramedSelfie(canvas);
 
       // Visual flash effect
       setFlash(true);
@@ -256,7 +320,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
     }
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64 = event.target?.result as string;
+      const rawBase64 = event.target?.result as string;
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -265,15 +329,15 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0);
-          const telemetry = analyzeCanvasPixels(canvas);
+          const { base64, telemetry } = createOptimalFaceFramedSelfie(canvas);
           setCapturedFromCamera(false);
           onSelfieSelected(base64, telemetry);
         } else {
           setCapturedFromCamera(false);
-          onSelfieSelected(base64);
+          onSelfieSelected(rawBase64);
         }
       };
-      img.src = base64;
+      img.src = rawBase64;
     };
     reader.readAsDataURL(file);
   };

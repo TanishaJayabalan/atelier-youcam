@@ -20,6 +20,7 @@ export default function MakeupPreview({
   renderedImageUrl,
   isRendering,
   originalSelfieUrl,
+  beautyProfile,
 }: MakeupPreviewProps) {
   const [renderedWithLandmarks, setRenderedWithLandmarks] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);

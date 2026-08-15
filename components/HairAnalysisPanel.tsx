@@ -94,10 +94,10 @@ export default function HairAnalysisPanel({
       name: item.name,
       brand: item.brand,
       category: 'haircare',
-      price: item.price,
+      priceEstimate: `$${item.price}`,
       image_url: item.image_url,
-      storeUrl: `https://www.sephora.com/search?keyword=${encodeURIComponent(item.name)}`,
-      actionReason: item.reason,
+      externalUrl: `https://www.sephora.com/search?keyword=${encodeURIComponent(item.name)}`,
+      reason: item.reason,
     });
     setAddedItemIds((prev) => ({ ...prev, [item.id]: true }));
     setTimeout(() => {

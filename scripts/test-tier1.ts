@@ -7,6 +7,7 @@ import { simulateSkinOutcome, computeSimulationIntensities } from '../lib/youcam
 import { analyzeHairDiagnostics } from '../lib/youcam/hair-analyzer';
 import { generateHairCareRoutine } from '../lib/hair-recommendation-engine';
 import { generateLookFromOwnedProducts } from '../lib/owned-look-generator';
+import { generateMockWeather } from '../lib/weather';
 import closetData from '../data/demo-closet.json';
 
 async function runTier1Verification() {
@@ -80,13 +81,7 @@ async function runTier1Verification() {
   const hairProfile = await analyzeHairDiagnostics('https://mock-image.com/selfie.jpg');
   console.log(`✓ Hair Pattern: ${hairProfile.curlTerm} (${hairProfile.curlType}), Frizz: ${hairProfile.frizzTerm}`);
 
-  const hairRoutine = generateHairCareRoutine(hairProfile, profile, {
-    city: 'San Francisco',
-    tempC: 22,
-    humidity: 70,
-    uvIndex: 6,
-    condition: 'Partly Cloudy',
-  });
+  const hairRoutine = generateHairCareRoutine(hairProfile, profile, generateMockWeather());
   console.log(`✓ Hair Frizz Strategy: ${hairRoutine.frizzDefenseStrategy}`);
   console.log(`✓ Prescribed Products Count: ${hairRoutine.recommendedProducts.length} (First: ${hairRoutine.recommendedProducts[0].name})`);
   console.log('✓ Test 1.6 Passed!\n');

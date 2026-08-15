@@ -99,33 +99,34 @@ export async function applyMakeup(
     );
 
     // Step 2: Build actions and run task
-    const actions = buildMakeupActions(steps);
     const taskId = await runTask('/s2s/v1.0/task/makeup-vto', {
-      file_sets: {
-        src_ids: [fileId],
-      },
-      actions: [
-        {
-          id: 0,
-          params: {
-            lipstick: steps.find((s) => s.category === 'lip')?.colorHex
-              ? { color: steps.find((s) => s.category === 'lip')?.colorHex, intensity: steps.find((s) => s.category === 'lip')?.intensity || 80 }
-              : undefined,
-            blush: steps.find((s) => s.category === 'blush')?.colorHex
-              ? { color: steps.find((s) => s.category === 'blush')?.colorHex, intensity: steps.find((s) => s.category === 'blush')?.intensity || 60 }
-              : undefined,
-            foundation: steps.find((s) => s.category === 'foundation')?.colorHex
-              ? { color: steps.find((s) => s.category === 'foundation')?.colorHex, intensity: steps.find((s) => s.category === 'foundation')?.intensity || 75 }
-              : undefined,
-            eyeshadow: steps.find((s) => s.category === 'eyeshadow')?.colorHex
-              ? { color: steps.find((s) => s.category === 'eyeshadow')?.colorHex, intensity: steps.find((s) => s.category === 'eyeshadow')?.intensity || 65 }
-              : undefined,
-            eyebrow: steps.find((s) => s.category === 'eyebrow')?.colorHex
-              ? { color: steps.find((s) => s.category === 'eyebrow')?.colorHex, intensity: steps.find((s) => s.category === 'eyebrow')?.intensity || 70 }
-              : undefined,
-          },
+      payload: {
+        file_sets: {
+          src_ids: [fileId],
         },
-      ],
+        actions: [
+          {
+            id: 0,
+            params: {
+              lipstick: steps.find((s) => s.category === 'lip')?.colorHex
+                ? { color: steps.find((s) => s.category === 'lip')?.colorHex, intensity: steps.find((s) => s.category === 'lip')?.intensity || 80 }
+                : undefined,
+              blush: steps.find((s) => s.category === 'blush')?.colorHex
+                ? { color: steps.find((s) => s.category === 'blush')?.colorHex, intensity: steps.find((s) => s.category === 'blush')?.intensity || 60 }
+                : undefined,
+              foundation: steps.find((s) => s.category === 'foundation')?.colorHex
+                ? { color: steps.find((s) => s.category === 'foundation')?.colorHex, intensity: steps.find((s) => s.category === 'foundation')?.intensity || 75 }
+                : undefined,
+              eyeshadow: steps.find((s) => s.category === 'eyeshadow')?.colorHex
+                ? { color: steps.find((s) => s.category === 'eyeshadow')?.colorHex, intensity: steps.find((s) => s.category === 'eyeshadow')?.intensity || 65 }
+                : undefined,
+              eyebrow: steps.find((s) => s.category === 'eyebrow')?.colorHex
+                ? { color: steps.find((s) => s.category === 'eyebrow')?.colorHex, intensity: steps.find((s) => s.category === 'eyebrow')?.intensity || 70 }
+                : undefined,
+            },
+          },
+        ],
+      },
     });
 
     // Step 3: Poll task result

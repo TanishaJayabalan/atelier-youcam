@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { base64ToBuffer } from '@/lib/image-utils';
 import { analyzeParallelBeautyProfile } from '@/lib/youcam/parallel-analyzer';
+import { analyzeSkinTone, generateMockSkinTone } from '@/lib/youcam/skin-tone';
 import { fetchWeather, generateMockWeather, WeatherResult } from '@/lib/weather';
 import { getClosetItems, saveLookSession } from '@/lib/supabase';
 import { generateRecommendation } from '@/lib/recommendation-engine';
+import { generateLLMRecommendation } from '@/lib/llm-engine';
 import { extractBufferTelemetry } from '@/lib/image-analysis';
 
 export async function POST(req: NextRequest) {

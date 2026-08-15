@@ -12,9 +12,11 @@ export async function analyzeParallelBeautyProfile(
   const isBuffer = Buffer.isBuffer(imageInput);
   const activeTelemetry = telemetry || (isBuffer ? extractBufferTelemetry(imageInput) : undefined);
 
+  const buf = isBuffer ? imageInput : Buffer.from(String(imageInput).replace(/^data:image\/\w+;base64,/, ''), 'base64');
+
   // Execute all 4 YouCam analyzers in parallel
   const [skinPromise, fitzpatrickPromise, colorTonesPromise, faceAttrPromise] = await Promise.allSettled([
-    analyzeSkin(imageInput, activeTelemetry),
+    analyzeSkin(buf, 'image/jpeg', activeTelemetry),
     analyzeFitzpatrickScale(imageInput, activeTelemetry),
     analyzeColorTones(imageInput, activeTelemetry),
     analyzeFaceAttributes(imageInput, activeTelemetry),

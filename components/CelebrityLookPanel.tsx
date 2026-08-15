@@ -22,7 +22,7 @@ export default function CelebrityLookPanel({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [customInspoFile, setCustomInspoFile] = useState<string | null>(null);
 
-  const defaultProfile: UserBeautyProfile = beautyProfile || {
+  const defaultProfile: any = beautyProfile || {
     skin: {
       overallScore: 85,
       skinType: 'combination',

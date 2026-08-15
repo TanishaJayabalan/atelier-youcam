@@ -1,5 +1,5 @@
 import { HairProfile, UserBeautyProfile } from '@/types/beauty-profile';
-import { WeatherData } from './weather';
+import { WeatherResult } from './weather';
 
 export interface HairProductItem {
   id: string;
@@ -29,7 +29,7 @@ export interface HairCareRoutine {
 export function generateHairCareRoutine(
   hair: HairProfile,
   beautyProfile?: UserBeautyProfile,
-  weather?: WeatherData
+  weather?: WeatherResult
 ): HairCareRoutine {
   const { curlCategory, curlType, curlTerm, frizziness, frizzTerm, length } = hair;
   const humidity = weather?.humidity || 50;

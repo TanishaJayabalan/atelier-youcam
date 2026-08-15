@@ -155,17 +155,17 @@ export function generateRecommendation(input: {
   const cleansers = skincareItems.filter((i) => (i.metadata as SkincareMetadata)?.step_category === 'cleanser');
   const cleanser =
     (hasHighOiliness
-      ? cleansers.find((c) => (c.metadata as SkincareMetadata)?.texture === 'foam')
+      ? cleansers.find((c) => (c.metadata as SkincareMetadata)?.texture === 'gel')
       : cleansers.find((c) => (c.metadata as SkincareMetadata)?.texture === 'fluid' || (c.metadata as SkincareMetadata)?.texture === 'cream')) ||
     cleansers[0];
 
-  const bhaItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('salicylic') || a.includes('bha')));
-  const niacinamideItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('niacinamide') || a.includes('zinc')));
-  const centellaItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('centella') || a.includes('madecassoside')));
-  const haItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('hyaluronic')));
-  const vitCItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('vitamin_c')));
-  const retinolItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('retinol')));
-  const caffeineItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('caffeine') || a.includes('egcg')));
+  const bhaItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'treatment' && (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('salicylic') || a.includes('bha')));
+  const niacinamideItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'serum' && (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('niacinamide') || a === 'zinc_pca' || a === 'zinc'));
+  const centellaItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'treatment' && (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('centella') || a.includes('madecassoside')));
+  const haItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'serum' && (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('hyaluronic')));
+  const vitCItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'serum' && (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('vitamin_c')));
+  const retinolItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'serum' && (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('retinol')));
+  const caffeineItem = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'treatment' && (i.metadata as SkincareMetadata)?.active_ingredients?.some((a) => a.includes('caffeine') || a.includes('egcg')));
 
   const moisturizers = skincareItems.filter((i) => (i.metadata as SkincareMetadata)?.step_category === 'moisturizer');
   const moisturizer =
