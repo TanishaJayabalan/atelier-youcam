@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing image input for hair analysis' }, { status: 400 });
     }
 
-    const hairProfile = await analyzeHairDiagnostics(srcImage);
+    const hairProfile = await analyzeHairDiagnostics(srcImage, weather);
     const routine = generateHairCareRoutine(hairProfile, beautyProfile, weather);
 
     return NextResponse.json({

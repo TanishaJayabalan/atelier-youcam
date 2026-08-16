@@ -74,4 +74,6 @@ export interface HairProfile {
   frizzTerm: 'Not Frizzy' | 'Slightly Frizzy' | 'Frizzy' | 'Extreme Frizzy';
   naturalColorHex?: string;
   naturalColorName?: string;
+  engineSource?: 'youcam_ai' | 'optical_fallback';
+  engineNotice?: string;
 }

@@ -435,6 +435,7 @@ function MirrorCheckContent() {
           <HairAnalysisPanel
             userImageUrl={selectedSelfie || undefined}
             beautyProfile={beautyProfile || undefined}
+            weather={weather || undefined}
           />
 
           {/* 7. Wardrobe Gap-Fill & Smart Cross-Sell Shelf */}
