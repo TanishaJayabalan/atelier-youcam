@@ -52,6 +52,7 @@ function MirrorCheckContent() {
   // Execution states
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [isRenderingOutfit, setIsRenderingOutfit] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Result states
@@ -112,7 +113,7 @@ function MirrorCheckContent() {
         resultsEl?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
 
-      // Stage 2: Parallel Try-On Render (Makeup + Clothes)
+      // Stage 2: Render Makeup VTO on facial selfie
       setIsRendering(true);
       const renderRes = await fetch('/api/youcam/render', {
         method: 'POST',
@@ -121,7 +122,7 @@ function MirrorCheckContent() {
           sessionId: data.sessionId,
           selfieBase64: selectedSelfie,
           makeupSteps: data.recommendation.makeupSteps,
-          outfitItem: data.recommendation.outfit.topOrDress || null,
+          outfitItem: null,
         }),
       });
 
@@ -129,11 +130,8 @@ function MirrorCheckContent() {
       if (renderData.success) {
         setMakeupResultUrl(renderData.makeupResultUrl || null);
         setMakeupError(renderData.makeupError || null);
-        setOutfitResultUrl(renderData.outfitResultUrl || null);
-        setOutfitError(renderData.outfitError || null);
       } else {
         setMakeupError(renderData.error || 'Failed to render makeup try-on.');
-        setOutfitError(renderData.error || 'Failed to render clothes try-on.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'An unexpected error occurred during analysis.');
@@ -171,9 +169,10 @@ function MirrorCheckContent() {
     }
   };
 
-  const handleRetryOutfit = async () => {
-    if (!selectedSelfie || !recommendation?.outfit?.topOrDress) return;
-    setIsRendering(true);
+  // Dedicated Clothes Try-On Handler with user-uploaded body photo
+  const handleTryOnOutfit = async (bodyPhotoBase64: string, outfitItem: any) => {
+    if (!bodyPhotoBase64 || !outfitItem) return;
+    setIsRenderingOutfit(true);
     setOutfitError(null);
     try {
       const res = await fetch('/api/youcam/render', {
@@ -181,21 +180,24 @@ function MirrorCheckContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          selfieBase64: selectedSelfie,
+          selfieBase64: bodyPhotoBase64,
           makeupSteps: [],
-          outfitItem: recommendation.outfit.topOrDress,
+          outfitItem: outfitItem || recommendation?.outfit?.topOrDress || null,
         }),
       });
       const data = await res.json();
-      if (data.outfitResultUrl) {
+      if (data.success && data.outfitResultUrl) {
         setOutfitResultUrl(data.outfitResultUrl);
+        setOutfitError(null);
       } else if (data.outfitError) {
         setOutfitError(data.outfitError);
+      } else {
+        setOutfitError(data.error || 'Failed to render clothes try-on.');
       }
     } catch (err: any) {
-      setOutfitError(err.message || 'Retry failed');
+      setOutfitError(err.message || 'Failed to render clothes try-on on body photo.');
     } finally {
-      setIsRendering(false);
+      setIsRenderingOutfit(false);
     }
   };
 
@@ -400,9 +402,8 @@ function MirrorCheckContent() {
               outfit={recommendation.outfit}
               renderedImageUrl={outfitResultUrl}
               outfitError={outfitError}
-              isRendering={isRendering}
-              originalSelfieUrl={selectedSelfie}
-              onRetry={handleRetryOutfit}
+              isRendering={isRenderingOutfit}
+              onTryOnOutfit={handleTryOnOutfit}
             />
           </div>
 
