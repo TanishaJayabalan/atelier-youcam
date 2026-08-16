@@ -46,6 +46,7 @@ function MirrorCheckContent() {
   // Input states
   const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('classy');
+  const [customVibePrompt, setCustomVibePrompt] = useState<string>('');
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [showCloset, setShowCloset] = useState(false);
 
@@ -95,6 +96,7 @@ function MirrorCheckContent() {
         body: JSON.stringify({
           selfieBase64: selectedSelfie,
           vibe: selectedVibe,
+          customPrompt: customVibePrompt,
           weather,
         }),
       });
@@ -281,6 +283,8 @@ function MirrorCheckContent() {
             <VibePicker
               selectedVibe={selectedVibe}
               onSelectVibe={(vibe: VibeType) => setSelectedVibe(vibe)}
+              customPrompt={customVibePrompt}
+              onCustomPromptChange={(prompt) => setCustomVibePrompt(prompt)}
             />
 
             {/* Main Action Trigger Card */}
@@ -388,6 +392,8 @@ function MirrorCheckContent() {
             userImageUrl={selectedSelfie || undefined}
             engineSource={engineSource || undefined}
             engineNotice={engineNotice || undefined}
+            customLookTitle={recommendation.customLookTitle}
+            customLookSummary={recommendation.customLookSummary}
           />
 
           {/* 3. Personalized Skincare Routine (With Conflict Protection) */}

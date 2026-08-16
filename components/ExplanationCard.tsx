@@ -19,6 +19,8 @@ interface ExplanationCardProps {
   userImageUrl?: string;
   engineSource?: string;
   engineNotice?: string;
+  customLookTitle?: string;
+  customLookSummary?: string;
 }
 
 export default function ExplanationCard({
@@ -30,6 +32,8 @@ export default function ExplanationCard({
   userImageUrl,
   engineSource,
   engineNotice,
+  customLookTitle,
+  customLookSummary,
 }: ExplanationCardProps) {
   const rednessScore = skin.concerns.redness?.score || 0;
   const acneScore = skin.concerns.acne?.score || 0;
@@ -70,19 +74,20 @@ export default function ExplanationCard({
   const makeupAdvice = generateMakeupAdvice(faceAttr, colorTones);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 overflow-hidden relative">
+    <div className="flex flex-col gap-6">
+      {/* 1. Daily Mirror Check Summary Banner */}
+      <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-stone-100">
           <div>
-            <div className="flex items-center flex-wrap gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
                 Daily Mirror Check Summary
               </span>
-              <span className="text-xs font-semibold text-stone-600 capitalize bg-stone-100 px-2.5 py-1 rounded-full">
-                {vibe} Vibe Profile
+              <span className="text-xs font-medium text-stone-500">
+                {customLookTitle ? 'Custom AI Look' : `${vibe.charAt(0).toUpperCase() + vibe.slice(1)} Vibe Profile`}
               </span>
               {beautyProfile?.fitzpatrick && (
-                <span className="text-[11px] font-mono font-medium text-stone-700 bg-stone-100 px-2 py-0.5 rounded-full border border-stone-200">
+                <span className="text-[10px] font-medium text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md">
                   Fitzpatrick {beautyProfile.fitzpatrick.type}
                 </span>
               )}
@@ -100,9 +105,14 @@ export default function ExplanationCard({
               )}
             </div>
             <h2 className="text-xl font-bold text-stone-900 mt-2">
-              Harmonized Look &amp; Skin Strategy
+              {customLookTitle || 'Harmonized Look & Skin Strategy'}
             </h2>
-            {engineNotice && (
+            {customLookSummary && (
+              <p className="text-xs text-amber-900/90 font-medium mt-1 bg-amber-50/70 px-2.5 py-1 rounded-lg border border-amber-200/50 inline-block">
+                ✨ Gemini AI Stylist: {customLookSummary}
+              </p>
+            )}
+            {engineNotice && !customLookSummary && (
               <p className="text-[11px] text-amber-800/90 bg-amber-50/80 px-2.5 py-1 rounded-lg border border-amber-200/50 inline-block mt-1.5">
                 ℹ️ {engineNotice}
               </p>

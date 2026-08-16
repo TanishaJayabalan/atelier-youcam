@@ -8,6 +8,8 @@ export type VibeType = 'classy' | 'elegant' | 'bold' | 'natural';
 interface VibePickerProps {
   selectedVibe: VibeType;
   onSelectVibe: (vibe: VibeType) => void;
+  customPrompt?: string;
+  onCustomPromptChange?: (prompt: string) => void;
 }
 
 interface VibeOption {
@@ -54,29 +56,46 @@ const VIBE_OPTIONS: VibeOption[] = [
   },
 ];
 
-export default function VibePicker({ selectedVibe, onSelectVibe }: VibePickerProps) {
+const INSPIRATION_CHIPS = [
+  { label: '☕ Espresso Latte Glam', prompt: 'Espresso latte look with rich cocoa velvet lip, warm terracotta cheeks and soft bronze shimmer' },
+  { label: '✨ Golden Hour Glow', prompt: 'Golden hour glazed radiance with juicy peach lip, molten gold lids and ultra-hydrated glass skin' },
+  { label: '🍒 Cherry Cola Lip', prompt: 'Cherry cola high-gloss lip with winged liner, sheer plum drape blush and defined brows' },
+  { label: '🥀 Velvet Noir Siren', prompt: 'Old hollywood red carpet glamour with velvet ruby matte lips, champagne lids and airbrushed base' },
+  { label: '🌸 Clean Girl Minimal', prompt: 'Clean girl model-off-duty aesthetic with sheer tinted peptide lip balm, natural pinch cheek flush and dewy skin tint' },
+];
+
+export default function VibePicker({
+  selectedVibe,
+  onSelectVibe,
+  customPrompt = '',
+  onCustomPromptChange,
+}: VibePickerProps) {
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6">
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
           <Crown className="w-5 h-5 text-amber-700" />
-          2. Choose Today&apos;s Desired Vibe
+          2. Choose Today&apos;s Desired Vibe &amp; Aesthetic
         </h2>
         <p className="text-xs text-stone-500 mt-0.5">
-          Our recommendation engine will formulate makeup intensities, color palettes, and outfit pairings tailored to your aesthetic.
+          Select a 1-click curated preset or use the Gemini AI Stylist below to describe any custom aesthetic.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+      {/* 4 Preset Options Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-6">
         {VIBE_OPTIONS.map((vibe) => {
-          const isSelected = selectedVibe === vibe.id;
+          const isSelected = selectedVibe === vibe.id && !customPrompt.trim();
           const Icon = vibe.icon;
 
           return (
             <button
               key={vibe.id}
               type="button"
-              onClick={() => onSelectVibe(vibe.id)}
+              onClick={() => {
+                onSelectVibe(vibe.id);
+                onCustomPromptChange?.('');
+              }}
               className={`text-left p-4 rounded-xl border-2 transition-all relative cursor-pointer flex flex-col justify-between ${
                 isSelected
                   ? 'border-amber-700 bg-amber-50/40 shadow-xs ring-2 ring-amber-600/20'
@@ -134,6 +153,78 @@ export default function VibePicker({ selectedVibe, onSelectVibe }: VibePickerPro
             </button>
           );
         })}
+      </div>
+
+      {/* Conversational Gemini AI Stylist Chatbot Prompt Box */}
+      <div className={`p-4 sm:p-5 rounded-2xl border-2 transition-all ${
+        customPrompt.trim()
+          ? 'border-amber-600 bg-gradient-to-br from-amber-50/70 via-rose-50/30 to-amber-50/70 ring-2 ring-amber-500/20'
+          : 'border-stone-200 bg-gradient-to-br from-stone-50 via-amber-50/20 to-stone-50'
+      }`}>
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-amber-600 to-rose-500 text-white flex items-center justify-center shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-wider text-stone-900">
+              Or Describe Your Custom Aesthetic (Gemini AI Stylist)
+            </span>
+          </div>
+          {customPrompt.trim() && (
+            <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-300">
+              Custom Aesthetic Active
+            </span>
+          )}
+        </div>
+
+        <p className="text-xs text-stone-600 mb-3">
+          Describe any look in your own words. Gemini Flash will translate your prompt into exact mathematical YouCam shades and outfit guidelines.
+        </p>
+
+        <div className="relative mb-3">
+          <textarea
+            rows={2}
+            value={customPrompt}
+            onChange={(e) => onCustomPromptChange?.(e.target.value)}
+            placeholder="E.g., Sunset bronze festival look with glossy terracotta lips, peach cheeks, and gold eye shimmer..."
+            className="w-full text-xs text-stone-900 bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600 placeholder:text-stone-400 transition-all resize-none shadow-2xs"
+          />
+          {customPrompt.trim() && (
+            <button
+              type="button"
+              onClick={() => onCustomPromptChange?.('')}
+              className="absolute right-3 top-3 text-[10px] font-semibold text-stone-400 hover:text-stone-700 bg-stone-100 hover:bg-stone-200 px-2 py-0.5 rounded-md transition-all cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Quick Inspiration Prompt Chips */}
+        <div>
+          <div className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider mb-2">
+            Quick Inspiration Aesthetics:
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {INSPIRATION_CHIPS.map((chip) => {
+              const isActive = customPrompt.trim() === chip.prompt;
+              return (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => onCustomPromptChange?.(chip.prompt)}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-amber-700 text-white border-amber-700 shadow-2xs'
+                      : 'bg-white hover:bg-amber-50/60 text-stone-700 border-stone-200/90 hover:border-amber-300 shadow-2xs'
+                  }`}
+                >
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

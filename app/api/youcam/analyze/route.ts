@@ -6,6 +6,7 @@ import { analyzeImageOptically } from '@/lib/optical-analyzer';
 import { fetchWeather, WeatherResult } from '@/lib/weather';
 import { getClosetItems, saveLookSession } from '@/lib/supabase';
 import { generateRecommendation } from '@/lib/recommendation-engine';
+import { generateCustomBeautyLook, CustomBeautyLook } from '@/lib/gemini/beauty-stylist';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
     const {
       selfieBase64,
       vibe = 'classy',
+      customPrompt,
       weather: clientWeather,
       lat,
       lon,
@@ -88,16 +90,32 @@ export async function POST(req: NextRequest) {
         : `Optical Pixel Diagnostics active (${youcamErr.message})`;
     }
 
-    // 4. Generate Unified Recommendations
+    // 4. Generate Custom Look with Gemini if customPrompt is present
+    let customLook: CustomBeautyLook | undefined;
+    if (customPrompt && typeof customPrompt === 'string' && customPrompt.trim()) {
+      try {
+        customLook = await generateCustomBeautyLook({
+          prompt: customPrompt.trim(),
+          skinTone,
+          weather,
+          beautyProfile,
+        });
+      } catch (geminiErr: any) {
+        console.warn('[Analyze Route Gemini Warning]:', geminiErr);
+      }
+    }
+
+    // 5. Generate Unified Recommendations
     const recommendation = generateRecommendation({
       skin: skinAnalysis,
       skinTone,
       weather,
       vibe: (vibe as any) || 'classy',
       closet: closetItems,
+      customLook,
     });
 
-    // 5. Save intermediate look session
+    // 6. Save intermediate look session
     const session = await saveLookSession({
       vibe,
       skin_analysis: skinAnalysis,
@@ -114,6 +132,7 @@ export async function POST(req: NextRequest) {
       beautyProfile,
       weather,
       recommendation,
+      customLook,
       engineSource,
       engineNotice,
     });

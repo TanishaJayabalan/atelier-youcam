@@ -31,6 +31,8 @@ export interface GapFillSuggestion {
 
 export interface Recommendation {
   vibe: 'classy' | 'elegant' | 'bold' | 'natural';
+  customLookTitle?: string;
+  customLookSummary?: string;
   skincareNotes: {
     warnings: string[];
     amSteps: SkincareStepRec[];
@@ -103,8 +105,9 @@ export function generateRecommendation(input: {
   weather: WeatherResult;
   vibe: 'classy' | 'elegant' | 'bold' | 'natural';
   closet: ClosetItem[];
+  customLook?: import('./gemini/beauty-stylist').CustomBeautyLook;
 }): Recommendation {
-  const { skin, skinTone, weather, vibe, closet } = input;
+  const { skin, skinTone, weather, vibe, closet, customLook } = input;
   const tone = skinTone || {
     skinToneHex: '#DFAC82',
     hexCode: '#DFAC82',
@@ -576,19 +579,24 @@ export function generateRecommendation(input: {
     `- **Look & Styling**: Curated a **${vibe.toUpperCase()}** profile with ${vibeConfig.styleDesc}. ${stylingRationale}`,
   ].join('\n');
 
+  const effectiveMakeupSteps = customLook?.makeupSteps && customLook.makeupSteps.length > 0 ? customLook.makeupSteps : makeupSteps;
+  const effectiveStylingRationale = customLook?.wardrobeGuidance ? `${customLook.wardrobeGuidance} ${stylingRationale}` : stylingRationale;
+
   return {
     vibe,
+    customLookTitle: customLook?.lookTitle,
+    customLookSummary: customLook?.aestheticSummary,
     skincareNotes: {
       warnings,
       amSteps,
       pmSteps,
     },
-    makeupSteps,
+    makeupSteps: effectiveMakeupSteps,
     outfit: {
       topOrDress,
       bottom,
       outerwear,
-      stylingRationale,
+      stylingRationale: effectiveStylingRationale,
     },
     gapFillSuggestions: gapFills,
     explanation,
