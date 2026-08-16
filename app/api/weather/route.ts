@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchWeather, geocodeCity, generateMockWeather } from '@/lib/weather';
+import { fetchWeather, geocodeCity } from '@/lib/weather';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
         const weather = await fetchWeather(geo.latitude, geo.longitude, geo.name);
         return NextResponse.json(weather);
       }
+      return NextResponse.json({ error: `City '${city}' not found.` }, { status: 404 });
     }
 
     // If lat & lon are provided
@@ -21,12 +22,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(weather);
     }
 
-    // Fallback to default/mock weather if no coordinates provided
-    const fallbackWeather = generateMockWeather();
-    return NextResponse.json(fallbackWeather);
+    // Default to San Francisco coordinates if no parameters are passed
+    const defaultWeather = await fetchWeather(37.7749, -122.4194, 'San Francisco');
+    return NextResponse.json(defaultWeather);
   } catch (err: any) {
     console.error('Weather route error:', err);
-    // Return gracefully with mock weather so app never crashes
-    return NextResponse.json(generateMockWeather());
+    return NextResponse.json(
+      { error: err.message || 'Failed to fetch weather data.' },
+      { status: 502 }
+    );
   }
 }

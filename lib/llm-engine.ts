@@ -8,7 +8,7 @@ const HF_API_URL = 'https://router.huggingface.co/hf-inference/v1/chat/completio
 const DEFAULT_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
 
 /**
- * Calls Hugging Face Inference API to generate live LLM recommendations
+ * Calls multi-provider LLMs (Gemini, Groq, OpenRouter, Hugging Face) to generate live recommendations
  * synthesizing dermatology metrics, atmospheric weather, wardrobe, and aesthetic vibe.
  */
 export async function generateLLMRecommendation(input: {
@@ -18,12 +18,6 @@ export async function generateLLMRecommendation(input: {
   vibe: 'classy' | 'elegant' | 'bold' | 'natural';
   closet: ClosetItem[];
 }): Promise<Recommendation | null> {
-  const apiKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
-
-  if (!apiKey) {
-    return null;
-  }
-
   const { skin, skinTone, weather, vibe, closet } = input;
   const ownedCloset = closet.filter((item) => item.is_owned);
 
@@ -65,21 +59,21 @@ The JSON must strictly conform to this schema:
       "category": "foundation",
       "colorHex": "${skinTone.skinToneHex || skinTone.hexCode}",
       "intensity": 75,
-      "finish": "matte | satin | dewy",
+      "finish": "matte",
       "productName": "Specific foundation shade and formula name matching their undertone"
     },
     {
       "category": "blush",
       "colorHex": "#HexCode matching their seasonal palette and vibe",
       "intensity": 55,
-      "finish": "dewy | satin",
+      "finish": "satin",
       "productName": "Specific blush product and shade name"
     },
     {
       "category": "lip",
       "colorHex": "#HexCode matching their seasonal palette and vibe",
       "intensity": 75,
-      "finish": "matte | glossy | satin",
+      "finish": "matte",
       "productName": "Specific lipstick or lip tint product and shade name"
     },
     {
@@ -96,7 +90,7 @@ The JSON must strictly conform to this schema:
     }
   ],
   "outfit": {
-    "topOrDress": { "id": "closet_item_id", "name": "Exact matching item from wardrobe", "brand": "Brand", "image_url": "Image URL", "category": "outfit_top | outfit_dress", "metadata": {} },
+    "topOrDress": { "id": "closet_item_id", "name": "Exact matching item from wardrobe", "brand": "Brand", "image_url": "Image URL", "category": "outfit_top", "metadata": {} },
     "bottom": { "id": "closet_item_id", "name": "Matching bottom item or null if dress", "brand": "Brand", "image_url": "Image URL", "category": "outfit_bottom", "metadata": {} },
     "outerwear": { "id": "closet_item_id", "name": "Matching outerwear layer or null if warm", "brand": "Brand", "image_url": "Image URL", "category": "outfit_outer", "metadata": {} },
     "stylingRationale": "Detailed explanation of why this outfit was curated for today's weather and vibe."
@@ -106,7 +100,7 @@ The JSON must strictly conform to this schema:
       "category": "Category",
       "suggestedProduct": "Product Name",
       "reason": "Why their closet/shelf needs this item",
-      "urgency": "high | medium | recommended"
+      "urgency": "high"
     }
   ]
 }`;
@@ -126,38 +120,129 @@ ${JSON.stringify(ownedCloset, null, 2)}
 
 Generate the complete bespoke JSON recommendation now.`;
 
-  try {
-    const res = await fetch(HF_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 2048,
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (!res.ok) {
-      return null;
+  // 1. Try Google Gemini API if key is present
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (geminiKey) {
+    try {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+            generationConfig: { responseMimeType: 'application/json' },
+          }),
+        }
+      );
+      if (geminiRes.ok) {
+        const gData = await geminiRes.json();
+        const rawText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (rawText) {
+          const parsed = JSON.parse(rawText);
+          return parsed;
+        }
+      }
+    } catch {
+      // Fall through to next provider
     }
-
-    const data = await res.json();
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const cleanJson = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-    const parsed: Recommendation = JSON.parse(cleanJson);
-
-    return parsed;
-  } catch (err) {
-    return null;
   }
+
+  // 2. Try Groq API if key is present
+  const groqKey = process.env.GROQ_API_KEY;
+  if (groqKey) {
+    try {
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+      if (groqRes.ok) {
+        const grData = await groqRes.json();
+        const content = grData?.choices?.[0]?.message?.content;
+        if (content) {
+          return JSON.parse(content);
+        }
+      }
+    } catch {
+      // Fall through to next provider
+    }
+  }
+
+  // 3. Try OpenRouter API if key is present
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  if (openRouterKey) {
+    try {
+      const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${openRouterKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.3-70b-instruct',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+        }),
+      });
+      if (orRes.ok) {
+        const orData = await orRes.json();
+        const content = orData?.choices?.[0]?.message?.content;
+        if (content) {
+          return JSON.parse(content);
+        }
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  // 4. Try Hugging Face Router
+  const hfKey = process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN;
+  if (hfKey) {
+    try {
+      const hfRes = await fetch(HF_API_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${hfKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: DEFAULT_MODEL,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.3,
+          max_tokens: 2048,
+          response_format: { type: 'json_object' },
+        }),
+      });
+      if (hfRes.ok) {
+        const data = await hfRes.json();
+        const content = data?.choices?.[0]?.message?.content;
+        if (content) {
+          const cleanJson = content.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+          return JSON.parse(cleanJson);
+        }
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  return null;
 }

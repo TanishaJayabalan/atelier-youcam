@@ -1,59 +1,37 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Sparkles, CheckCircle2, Paintbrush, SplitSquareVertical, SlidersHorizontal } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Paintbrush, SplitSquareVertical, SlidersHorizontal, AlertCircle, RefreshCw } from 'lucide-react';
 import { MakeupStep } from '@/lib/youcam/makeup-vto';
-import { applyRealMakeupLandmarks } from '@/lib/face-mesh-makeup';
 import { UserBeautyProfile } from '@/types/beauty-profile';
 import { findFoundationMatch } from '@/lib/foundation-matcher';
 
 interface MakeupPreviewProps {
   makeupSteps: MakeupStep[];
   renderedImageUrl: string | null;
+  makeupError?: string | null;
   isRendering: boolean;
   originalSelfieUrl?: string | null;
   beautyProfile?: UserBeautyProfile;
+  onRetry?: () => void;
 }
 
 export default function MakeupPreview({
   makeupSteps,
   renderedImageUrl,
+  makeupError,
   isRendering,
   originalSelfieUrl,
   beautyProfile,
+  onRetry,
 }: MakeupPreviewProps) {
-  const [renderedWithLandmarks, setRenderedWithLandmarks] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
   const [isComparingSplit, setIsComparingSplit] = useState(false);
   const [sliderPos, setSliderPos] = useState<number>(50);
 
-  const rawOriginalImage = originalSelfieUrl || renderedImageUrl;
-
-  // Apply real FaceMesh-based lipstick and blush to the user's lips and cheeks
-  useEffect(() => {
-    let active = true;
-    async function renderFaceMakeup() {
-      const sourceImage = originalSelfieUrl || renderedImageUrl;
-      if (!sourceImage || makeupSteps.length === 0) return;
-
-      try {
-        const result = await applyRealMakeupLandmarks(sourceImage, makeupSteps);
-        if (active) {
-          setRenderedWithLandmarks(result);
-        }
-      } catch (err) {
-        console.error('FaceMesh makeup rendering error:', err);
-      }
-    }
-
-    renderFaceMakeup();
-    return () => {
-      active = false;
-    };
-  }, [originalSelfieUrl, renderedImageUrl, makeupSteps]);
-
-  const activeVtoImage = renderedWithLandmarks || renderedImageUrl || originalSelfieUrl;
-  const displayImage = showOriginal ? rawOriginalImage || activeVtoImage : activeVtoImage;
+  const rawOriginalImage = originalSelfieUrl;
+  const activeVtoImage = renderedImageUrl;
+  const displayImage = showOriginal ? rawOriginalImage : (activeVtoImage || rawOriginalImage);
 
   const lipStep = makeupSteps.find((s) => s.category === 'lip');
   const blushStep = makeupSteps.find((s) => s.category === 'blush');
@@ -72,41 +50,68 @@ export default function MakeupPreview({
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setIsComparingSplit(!isComparingSplit)}
-              className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
-                isComparingSplit
-                  ? 'bg-amber-700 text-white border-amber-800 shadow-xs'
-                  : 'text-stone-700 hover:text-stone-900 bg-stone-100 border-stone-200'
-              }`}
-              title="Toggle interactive split slider"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              Split Slider
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsComparingSplit(false);
-                setShowOriginal(!showOriginal);
-              }}
-              className="text-[11px] font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2.5 py-1 rounded-lg border border-stone-200 flex items-center gap-1 cursor-pointer transition-all"
-            >
-              <SplitSquareVertical className="w-3.5 h-3.5" />
-              {showOriginal ? 'Show VTO Look' : 'Show Original'}
-            </button>
-          </div>
+          {activeVtoImage && rawOriginalImage && (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setIsComparingSplit(!isComparingSplit)}
+                className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
+                  isComparingSplit
+                    ? 'bg-amber-700 text-white border-amber-800 shadow-xs'
+                    : 'text-stone-700 hover:text-stone-900 bg-stone-100 border-stone-200'
+                }`}
+                title="Toggle interactive split slider"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Split Slider
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsComparingSplit(false);
+                  setShowOriginal(!showOriginal);
+                }}
+                className="text-[11px] font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-2.5 py-1 rounded-lg border border-stone-200 flex items-center gap-1 cursor-pointer transition-all"
+              >
+                <SplitSquareVertical className="w-3.5 h-3.5" />
+                {showOriginal ? 'Show VTO Look' : 'Show Original'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Main Canvas Viewport */}
         <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-stone-950 border border-stone-200 mb-5 flex items-center justify-center select-none group">
-          {displayImage ? (
-            isComparingSplit && rawOriginalImage ? (
+          {makeupError ? (
+            <div className="p-6 text-center text-stone-300 max-w-sm flex flex-col items-center">
+              <AlertCircle className="w-8 h-8 text-amber-500 mb-2" />
+              <h4 className="text-xs font-bold text-white mb-1">Makeup Try-On Unavailable</h4>
+              <p className="text-[11px] text-stone-400 mb-3">{makeupError}</p>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Retry Makeup VTO
+                </button>
+              )}
+            </div>
+          ) : isRendering ? (
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center animate-shimmer relative">
+              <div className="w-10 h-10 rounded-full border-3 border-amber-600 border-t-transparent animate-spin mb-3" />
+              <span className="text-xs font-semibold text-stone-200">
+                Rendering Live YouCam Makeup Virtual Try-On...
+              </span>
+              <span className="text-[11px] text-stone-400 mt-1">
+                Applying lipstick, blush, and complexion shades via YouCam S2S AI
+              </span>
+            </div>
+          ) : displayImage ? (
+            isComparingSplit && rawOriginalImage && activeVtoImage ? (
               /* Interactive Split Slider View */
               <div className="relative w-full h-full">
-                {/* Before Image (Original) */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={rawOriginalImage}
@@ -114,21 +119,19 @@ export default function MakeupPreview({
                   className="absolute inset-0 w-full h-full object-cover"
                 />
 
-                {/* After Image (Rendered with clip path) */}
                 <div
                   className="absolute inset-0 overflow-hidden"
                   style={{ width: `${sliderPos}%` }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={activeVtoImage!}
+                    src={activeVtoImage}
                     alt="VTO Render"
                     className="absolute inset-0 w-full h-full object-cover max-w-none"
                     style={{ width: '100%', height: '100%' }}
                   />
                 </div>
 
-                {/* Divider Line */}
                 <div
                   className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none"
                   style={{ left: `${sliderPos}%` }}
@@ -138,7 +141,6 @@ export default function MakeupPreview({
                   </div>
                 </div>
 
-                {/* Drag control slider overlay */}
                 <input
                   type="range"
                   min="0"
@@ -148,9 +150,8 @@ export default function MakeupPreview({
                   className="absolute inset-0 opacity-0 cursor-ew-resize w-full h-full"
                 />
 
-                {/* Labels */}
                 <div className="absolute bottom-3 left-3 bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded shadow-sm pointer-events-none">
-                  VTO Applied
+                  YouCam VTO
                 </div>
                 <div className="absolute bottom-3 right-3 bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded shadow-sm pointer-events-none">
                   Original
@@ -165,13 +166,11 @@ export default function MakeupPreview({
                   className="w-full h-full object-cover transition-opacity duration-300"
                 />
 
-                {/* Status Badge */}
                 <div className="absolute bottom-3 right-3 bg-stone-900/85 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  {showOriginal ? 'Original Canvas' : 'Full VTO Look Applied'}
+                  {showOriginal ? 'Original Canvas' : 'YouCam VTO Applied'}
                 </div>
 
-                {/* Active Lip Shade Tag */}
                 {lipStep && !showOriginal && (
                   <div className="absolute top-3 left-3 bg-stone-900/85 backdrop-blur-md text-white text-[10px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     <span
@@ -182,7 +181,6 @@ export default function MakeupPreview({
                   </div>
                 )}
 
-                {/* Active Blush Shade Tag */}
                 {blushStep && !showOriginal && (
                   <div className="absolute top-10 left-3 mt-1 bg-stone-900/85 backdrop-blur-md text-white text-[10px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
                     <span
@@ -194,16 +192,6 @@ export default function MakeupPreview({
                 )}
               </>
             )
-          ) : isRendering ? (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center animate-shimmer relative">
-              <div className="w-10 h-10 rounded-full border-3 border-amber-600 border-t-transparent animate-spin mb-3" />
-              <span className="text-xs font-semibold text-stone-800">
-                Fitting Lipstick &amp; Blush to Facial Landmarks...
-              </span>
-              <span className="text-[11px] text-stone-500 mt-1">
-                Applying lipstick to lips and soft blush to cheekbones
-              </span>
-            </div>
           ) : (
             <div className="p-6 text-center text-stone-400 text-xs">
               Waiting for portrait analysis...
@@ -211,7 +199,7 @@ export default function MakeupPreview({
           )}
         </div>
 
-        {/* Foundation Shade Finder Panel (Feature 1.2) */}
+        {/* Foundation Shade Finder Panel */}
         {beautyProfile && (
           <div className="mb-4 p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80">
             {(() => {

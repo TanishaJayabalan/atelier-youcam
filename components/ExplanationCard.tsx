@@ -13,7 +13,7 @@ interface ExplanationCardProps {
   vibe: string;
   skin: SkinAnalysisResult;
   skinTone: SkinToneResult;
-  weather: WeatherResult;
+  weather?: WeatherResult;
   explanation: string;
   beautyProfile?: UserBeautyProfile;
   userImageUrl?: string;
@@ -148,14 +148,20 @@ export default function ExplanationCard({
               <span className="text-xs font-bold text-stone-900">Atmospheric Defense</span>
             </div>
             <p className="text-xs text-stone-600">
-              {weather.tempC}°C in {weather.city || 'your area'}. UV Index {weather.uvIndex}{' '}
-              {weather.uvIndex >= 8
-                ? '(Very High UV defense active)'
-                : weather.uvIndex >= 6
-                ? '(High UV defense active)'
-                : weather.uvIndex >= 3
-                ? '(Moderate UV)'
-                : '(Low UV)'}.
+              {weather ? (
+                <>
+                  {weather.tempC}°C in {weather.city || 'your area'}. UV Index {weather.uvIndex}{' '}
+                  {weather.uvIndex >= 8
+                    ? '(Very High UV defense active)'
+                    : weather.uvIndex >= 6
+                    ? '(High UV defense active)'
+                    : weather.uvIndex >= 3
+                    ? '(Moderate UV)'
+                    : '(Low UV)'}.
+                </>
+              ) : (
+                <span>Standard atmospheric defense and broad-spectrum SPF protection active.</span>
+              )}
             </p>
           </div>
         </div>

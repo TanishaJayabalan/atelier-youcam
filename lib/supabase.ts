@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 export type ClosetCategory =
   | 'outfit_top'
@@ -59,76 +60,43 @@ export interface LookSession {
   outfit_result_url?: string;
 }
 
-import demoClosetData from '../data/demo-closet.json';
+let serverClient: SupabaseClient | null = null;
+let browserClient: SupabaseClient | null = null;
 
-// In-Memory Fallback Storage (Used when Supabase credentials are not yet configured)
-class InMemoryStore {
-  private closetItems: Map<string, ClosetItem> = new Map();
-  private sessions: Map<string, LookSession> = new Map();
-
-  constructor() {
-    this.seedDefaultItems();
+function generateUuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
   }
-
-  seedDefaultItems() {
-    if (Array.isArray(demoClosetData)) {
-      for (const item of demoClosetData as ClosetItem[]) {
-        this.closetItems.set(item.id, item);
-      }
-    }
-  }
-
-  setItems(items: ClosetItem[]) {
-    this.closetItems.clear();
-    for (const item of items) {
-      this.closetItems.set(item.id, item);
-    }
-  }
-
-  getItems(): ClosetItem[] {
-    return Array.from(this.closetItems.values());
-  }
-
-  upsertItem(item: ClosetItem): ClosetItem {
-    this.closetItems.set(item.id, item);
-    return item;
-  }
-
-  saveSession(session: LookSession): LookSession {
-    this.sessions.set(session.id, session);
-    return session;
-  }
-
-  getSession(id: string): LookSession | null {
-    return this.sessions.get(id) || null;
-  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
-export const inMemoryStore = new InMemoryStore();
-
-export function isSupabaseConfigured(): boolean {
+function getCredentials() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !url.startsWith('https://') || url.includes('mock.supabase.co')) {
-    return false;
+  if (!url || !url.startsWith('https://')) {
+    throw new Error('Missing or invalid NEXT_PUBLIC_SUPABASE_URL in environment.');
   }
-  return Boolean(serviceKey || anonKey);
-}
 
-let serverClient: SupabaseClient | null = null;
-let browserClient: SupabaseClient | null = null;
+  const key = serviceKey || anonKey;
+  if (!key) {
+    throw new Error('Missing Supabase API key (NEXT_PUBLIC_SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY).');
+  }
+
+  return { url, key, anonKey: anonKey || key };
+}
 
 /**
  * Server-side Supabase client (prefers Service Role Key to bypass RLS in API routes).
  */
-export function getSupabaseServerClient(): SupabaseClient | null {
-  if (!isSupabaseConfigured()) return null;
+export function getSupabaseServerClient(): SupabaseClient {
   if (serverClient) return serverClient;
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const { url, key } = getCredentials();
 
   serverClient = createClient(url, key, {
     auth: { persistSession: false },
@@ -139,57 +107,45 @@ export function getSupabaseServerClient(): SupabaseClient | null {
 /**
  * Browser / Client-side Supabase client.
  */
-export function getSupabaseBrowserClient(): SupabaseClient | null {
-  if (!isSupabaseConfigured()) return null;
+export function getSupabaseBrowserClient(): SupabaseClient {
   if (browserClient) return browserClient;
+  const { url, anonKey } = getCredentials();
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  browserClient = createClient(url, key);
+  browserClient = createClient(url, anonKey);
   return browserClient;
 }
 
 // -------------------------------------------------------------
-// Unified Database Access Helpers (Transparent Fallback)
+// Real Supabase Database Access Helpers
 // -------------------------------------------------------------
 
 /**
- * Fetches all closet items (from Supabase or in-memory fallback).
+ * Fetches all closet items from Supabase.
  */
 export async function getClosetItems(filter?: { category?: ClosetCategory; isOwned?: boolean }): Promise<ClosetItem[]> {
   const supabase = getSupabaseServerClient();
 
-  if (supabase) {
-    let query = supabase.from('closet_items').select('*');
-    if (filter?.category) {
-      query = query.eq('category', filter.category);
-    }
-    if (filter?.isOwned !== undefined) {
-      query = query.eq('is_owned', filter.isOwned);
-    }
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) {
-      return data as ClosetItem[];
-    }
-  }
-
-  // In-memory fallback
-  let items = inMemoryStore.getItems();
+  let query = supabase.from('closet_items').select('*');
   if (filter?.category) {
-    items = items.filter((i) => i.category === filter.category);
+    query = query.eq('category', filter.category);
   }
   if (filter?.isOwned !== undefined) {
-    items = items.filter((i) => i.is_owned === filter.isOwned);
+    query = query.eq('is_owned', filter.isOwned);
   }
-  return items;
+
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(`Failed to fetch closet items from Supabase: ${error.message}`);
+  }
+
+  return (data || []) as ClosetItem[];
 }
 
 /**
- * Upserts a closet item (to Supabase and/or in-memory store).
+ * Upserts a closet item to Supabase PostgreSQL database.
  */
 export async function upsertClosetItem(item: Partial<ClosetItem> & { name: string; category: ClosetCategory }): Promise<ClosetItem> {
-  const id = item.id || `item_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const id = item.id && item.id.includes('-') ? item.id : generateUuid();
   const fullItem: ClosetItem = {
     id,
     category: item.category,
@@ -202,21 +158,20 @@ export async function upsertClosetItem(item: Partial<ClosetItem> & { name: strin
     updated_at: new Date().toISOString(),
   };
 
-  inMemoryStore.upsertItem(fullItem);
-
   const supabase = getSupabaseServerClient();
-  if (supabase) {
-    await supabase.from('closet_items').upsert(fullItem);
+  const { error } = await supabase.from('closet_items').upsert(fullItem);
+  if (error) {
+    throw new Error(`Failed to upsert closet item in Supabase: ${error.message}`);
   }
 
   return fullItem;
 }
 
 /**
- * Saves a look session.
+ * Saves a look session to Supabase PostgreSQL database.
  */
 export async function saveLookSession(session: Partial<LookSession>): Promise<LookSession> {
-  const id = session.id || `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const id = session.id && session.id.includes('-') ? session.id : generateUuid();
   const fullSession: LookSession = {
     id,
     created_at: session.created_at || new Date().toISOString(),
@@ -230,27 +185,24 @@ export async function saveLookSession(session: Partial<LookSession>): Promise<Lo
     outfit_result_url: session.outfit_result_url,
   };
 
-  inMemoryStore.saveSession(fullSession);
-
   const supabase = getSupabaseServerClient();
-  if (supabase) {
-    await supabase.from('look_sessions').upsert(fullSession);
+  const { error } = await supabase.from('look_sessions').upsert(fullSession);
+  if (error) {
+    throw new Error(`Failed to save look session in Supabase: ${error.message}`);
   }
 
   return fullSession;
 }
 
 /**
- * Retrieves a look session by ID.
+ * Retrieves a look session by ID from Supabase PostgreSQL database.
  */
 export async function getLookSession(id: string): Promise<LookSession | null> {
   const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data, error } = await supabase.from('look_sessions').select('*').eq('id', id).single();
-    if (!error && data) {
-      return data as LookSession;
-    }
+  const { data, error } = await supabase.from('look_sessions').select('*').eq('id', id).single();
+  if (error) {
+    return null;
   }
 
-  return inMemoryStore.getSession(id);
+  return data as LookSession;
 }

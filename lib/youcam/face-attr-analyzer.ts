@@ -1,43 +1,10 @@
 import { uploadFile, runTask, pollTask } from './client';
 import { FaceAttributesResult, FaceShape } from '@/types/beauty-profile';
-import { extractBufferTelemetry, OpticalTelemetry } from '../image-analysis';
-
-export function computeCalibratedFaceAttributes(telemetry?: OpticalTelemetry): FaceAttributesResult {
-  return {
-    faceShape: 'Oval',
-    age: 26,
-    gender: 'female',
-    eyeShape: 'Almond',
-    eyeSize: 'Average',
-    eyeAngle: 'Upturned',
-    eyeDistance: 'Average',
-    eyelidType: 'Double-lid',
-    eyebrowShape: 'Soft Angled',
-    eyebrowThickness: 'Dense',
-    eyebrowDistance: 'Average',
-    lipShape: 'Full',
-    noseWidth: 'Average',
-    noseLength: 'Average',
-    cheekbones: 'High Cheekbone',
-    ratios: {
-      faceAspectRatio: 1.44,
-      horizontalThird: '33% : 34% : 33% (Balanced)',
-      verticalFifth: '20% : 20% : 20% : 20% : 20% (Balanced)',
-      eyeAspectRatio: 3.0,
-      noseToLipToChin: 'Balanced lower-third ratio (1:1.618)',
-      upperLipToLowerLip: 'Balanced (1:1.618 golden proportion)',
-    },
-  };
-}
 
 export async function analyzeFaceAttributes(
-  imageInput: Buffer | string,
-  telemetry?: OpticalTelemetry
+  imageInput: Buffer | string
 ): Promise<FaceAttributesResult> {
   const isBuffer = Buffer.isBuffer(imageInput);
-  const activeTelemetry = telemetry || (isBuffer ? extractBufferTelemetry(imageInput) : undefined);
-
-  const fallback = () => computeCalibratedFaceAttributes(activeTelemetry);
 
   try {
     let fileId: string;
@@ -74,13 +41,12 @@ export async function analyzeFaceAttributes(
 
     const result = await pollTask<any>('/s2s/v2.0/task/face-attr-analysis', taskId, {
       timeoutMs: 25000,
-      mockResultGenerator: fallback,
     });
 
     const res = result?.results || result || {};
 
     // Normalize face shape
-    let rawShape = res.faceshape || res.face_shape || 'Oval';
+    const rawShape = res.faceshape || res.face_shape || 'Oval';
     let faceShape: FaceShape = 'Oval';
     const sLower = String(rawShape).toLowerCase();
     if (sLower.includes('round')) faceShape = 'Round';
@@ -137,8 +103,7 @@ export async function analyzeFaceAttributes(
       cheekbones: cheekbones as any,
       ratios,
     };
-  } catch (err) {
-    console.warn('Face attributes analyzer fallback triggered:', err);
-    return fallback();
+  } catch (err: any) {
+    throw new Error(`Face attributes analysis failed: ${err.message}`);
   }
 }

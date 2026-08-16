@@ -15,21 +15,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing image input for skin simulation' }, { status: 400 });
     }
 
-    const defaultSkin = skinAnalysis || {
-      overallScore: 80,
-      skinType: 'combination',
-      concerns: {
-        redness: { score: 65, severity: 'moderate' },
-        acne: { score: 70, severity: 'moderate' },
-        pore: { score: 72, severity: 'moderate' },
-        texture: { score: 75, severity: 'moderate' },
-      },
-    };
+    if (!skinAnalysis || !skinAnalysis.concerns) {
+      return NextResponse.json({ error: 'Valid skin analysis results are required for simulation' }, { status: 400 });
+    }
 
-    const result = await simulateSkinOutcome(srcImage, defaultSkin);
+    const result = await simulateSkinOutcome(srcImage, skinAnalysis);
     return NextResponse.json({ success: true, ...result });
   } catch (err: any) {
     console.error('API Error in skin-simulation:', err);
-    return NextResponse.json({ error: err.message || 'Failed to simulate skin' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to simulate skin outcome' }, { status: 500 });
   }
 }

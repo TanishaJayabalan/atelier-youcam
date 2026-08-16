@@ -1,5 +1,4 @@
 import { uploadFile, runTask, pollTask } from './client';
-import { computeRealSkinAnalysis, extractBufferTelemetry, OpticalTelemetry } from '../image-analysis';
 
 export type SkinType = 'oily' | 'dry' | 'combination' | 'sensitive' | 'normal';
 
@@ -27,7 +26,7 @@ export type ConcernKey =
 export interface ConcernScore {
   key: ConcernKey;
   displayName: string;
-  label?: string; // alias
+  label?: string;
   score: number; // 0 to 100
   severity: 'low' | 'moderate' | 'high';
   subRegions?: Record<string, number>;
@@ -43,7 +42,7 @@ export interface SkinAnalysisResult {
   skinType: SkinType;
   overallScore: number; // 1 to 100
   skinAge?: number;
-  concerns: Record<ConcernKey, ConcernScore>;
+  concerns: Record<string, ConcernScore>;
   topConcerns: ConcernScore[];
   rawResponse?: any;
 }
@@ -65,7 +64,7 @@ export const ALL_CONCERN_KEYS: ConcernKey[] = [
   'acne',
 ];
 
-const DISPLAY_NAMES: Record<ConcernKey, string> = {
+const DISPLAY_NAMES: Record<string, string> = {
   spots: 'Hyperpigmentation & Spots',
   wrinkles: 'Fine Lines & Wrinkles',
   texture: 'Skin Smoothness & Texture',
@@ -75,6 +74,7 @@ const DISPLAY_NAMES: Record<ConcernKey, string> = {
   oiliness: 'Sebum & T-Zone Oiliness',
   moisture: 'Hydration Level',
   pores: 'Pore Enlargement',
+  pore: 'Pore Enlargement',
   eye_bags: 'Under-Eye Puffiness',
   radiance: 'Skin Glow & Radiance',
   firmness: 'Skin Elasticity & Firmness',
@@ -87,11 +87,7 @@ const DISPLAY_NAMES: Record<ConcernKey, string> = {
   uniformness: 'Tone Uniformity',
 };
 
-export function normalizeSkinAnalysisResponse(raw: any, selfieBuffer?: Buffer, telemetry?: OpticalTelemetry): SkinAnalysisResult {
-  if (telemetry) {
-    return computeRealSkinAnalysis(telemetry);
-  }
-
+export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
   const rawConcerns = raw?.concerns || raw?.results?.concerns || raw?.result?.concerns || raw?.output || {};
   const typedConcerns: Record<string, ConcernScore> = {};
 
@@ -100,7 +96,7 @@ export function normalizeSkinAnalysisResponse(raw: any, selfieBuffer?: Buffer, t
     const normalizedScore = Math.max(0, Math.min(100, Math.round(rawScore)));
 
     const severity = scoreToSeverity(normalizedScore);
-    const displayName = DISPLAY_NAMES[key as ConcernKey] || key;
+    const displayName = DISPLAY_NAMES[key] || key;
 
     typedConcerns[key] = {
       key: key as ConcernKey,
@@ -112,22 +108,8 @@ export function normalizeSkinAnalysisResponse(raw: any, selfieBuffer?: Buffer, t
     };
   }
 
-  for (const k of ALL_CONCERN_KEYS) {
-    if (!typedConcerns[k]) {
-      const fallbackScore = Math.floor(Math.random() * 25) + 15;
-      const displayName = DISPLAY_NAMES[k] || k;
-      typedConcerns[k] = {
-        key: k,
-        displayName,
-        label: displayName,
-        score: fallbackScore,
-        severity: 'low',
-      };
-    }
-  }
-
   const topConcerns = Object.values(typedConcerns)
-    .filter((c) => ['redness', 'pores', 'dark_circles', 'dark_circle', 'oiliness', 'texture', 'wrinkles', 'acne'].includes(c.key))
+    .filter((c) => ['redness', 'pores', 'pore', 'dark_circles', 'dark_circle', 'oiliness', 'texture', 'wrinkles', 'acne'].includes(c.key))
     .sort((a, b) => b.score - a.score)
     .slice(0, 4);
 
@@ -138,54 +120,30 @@ export function normalizeSkinAnalysisResponse(raw: any, selfieBuffer?: Buffer, t
   else if (rawType.includes('combo') || rawType.includes('combination')) skinType = 'combination';
   else if (rawType.includes('sens')) skinType = 'sensitive';
 
+  const scoredConcerns = Object.values(typedConcerns);
+  const avgConcernScore = scoredConcerns.length > 0
+    ? scoredConcerns.reduce((sum, c) => sum + c.score, 0) / scoredConcerns.length
+    : 20;
+
   const overallScore =
     raw?.overall_score ||
     raw?.overallScore ||
     raw?.result?.overall_score ||
-    Math.round(
-      100 -
-        (typedConcerns.redness.score +
-          typedConcerns.acne.score +
-          typedConcerns.wrinkles.score +
-          typedConcerns.pores.score) /
-          4
-    );
+    Math.max(1, Math.min(100, Math.round(100 - avgConcernScore * 0.75)));
 
   return {
     skinType,
     overallScore: Math.max(1, Math.min(100, overallScore)),
     skinAge: raw?.skin_age || raw?.skinAge || undefined,
-    concerns: typedConcerns as Record<ConcernKey, ConcernScore>,
+    concerns: typedConcerns,
     topConcerns,
     rawResponse: raw,
   };
 }
 
-export function generateMockSkinAnalysis(selfieBuffer?: Buffer, telemetry?: OpticalTelemetry): SkinAnalysisResult {
-  if (telemetry) {
-    return computeRealSkinAnalysis(telemetry);
-  }
-  if (selfieBuffer && selfieBuffer.length > 0) {
-    const extracted = extractBufferTelemetry(selfieBuffer);
-    return computeRealSkinAnalysis(extracted);
-  }
-
-  return computeRealSkinAnalysis({
-    avgR: 204,
-    avgG: 162,
-    avgB: 140,
-    rednessRatio: 0.24,
-    specularRatio: 0.18,
-    roughnessVariance: 16,
-    underEyeContrast: 0.14,
-    luminance: 172,
-  });
-}
-
 export async function analyzeSkin(
   selfieBuffer: Buffer,
-  contentType: string = 'image/jpeg',
-  telemetry?: OpticalTelemetry
+  contentType: string = 'image/jpeg'
 ): Promise<SkinAnalysisResult> {
   try {
     const fileId = await uploadFile(
@@ -214,11 +172,10 @@ export async function analyzeSkin(
 
     const rawResult = await pollTask('/s2s/v2.0/task/skin-analysis', taskId, {
       timeoutMs: 35000,
-      mockResultGenerator: () => generateMockSkinAnalysis(selfieBuffer, telemetry),
     });
 
-    return normalizeSkinAnalysisResponse(rawResult, selfieBuffer, telemetry);
-  } catch (err) {
-    return generateMockSkinAnalysis(selfieBuffer, telemetry);
+    return normalizeSkinAnalysisResponse(rawResult);
+  } catch (err: any) {
+    throw new Error(`Skin analysis failed: ${err.message}`);
   }
 }

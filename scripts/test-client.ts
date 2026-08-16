@@ -1,4 +1,8 @@
-import { uploadFile, runTask, pollTask, formatYouCamError, generateRequestId } from '../lib/youcam/client';
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+import { uploadFile, formatYouCamError, generateRequestId } from '../lib/youcam/client';
 
 async function runClientTests() {
   console.log('--- Testing Component 2: Generic YouCam Task Client ---');
@@ -28,32 +32,16 @@ async function runClientTests() {
   }
   console.log('✓ Test 2 Passed: Request ID generation is unique.');
 
-  // Test 3: Generic Upload -> Run -> Poll pipeline
-  console.log('\n[Test 3] Testing Generic Upload -> Run -> Poll Pipeline...');
-  const dummyBuffer = Buffer.from('mock-image-bytes-123456');
-  
+  // Test 3: Live File Upload via Presigned S3 URL
+  console.log('\n[Test 3] Testing Live S2S File Upload...');
+  const dummyBuffer = Buffer.from('test-image-payload-data');
   const fileId = await uploadFile('/s2s/v1.0/file/skin-analysis', dummyBuffer, 'image/jpeg', 'test.jpg');
-  console.log('Upload returned fileId:', fileId);
+  console.log('Live upload returned fileId (length ' + fileId.length + '):', fileId.substring(0, 20) + '...');
 
-  const taskId = await runTask('/s2s/v1.0/task/skin-analysis', {
-    file_id: fileId,
-    concerns: ['wrinkle', 'pore', 'dark_circle'],
-  });
-  console.log('Run task returned taskId:', taskId);
-
-  const pollResult = await pollTask('/s2s/v1.0/task/skin-analysis', taskId, {
-    mockResultGenerator: () => ({
-      status: 'success',
-      skin_type: 'combination',
-      scores: { wrinkle: 85, pore: 70, dark_circle: 60 },
-    }),
-  });
-  console.log('Poll returned result:', pollResult);
-
-  if (pollResult.skin_type === 'combination' && pollResult.scores.wrinkle === 85) {
-    console.log('✓ Test 3 Passed: Upload -> Run -> Poll pipeline functions correctly.');
+  if (fileId && !fileId.includes('mock')) {
+    console.log('✓ Test 3 Passed: File upload and presigned PUT successfully executed against YouCam S3 storage.');
   } else {
-    throw new Error('Test 3 Failed: Poll result did not match expected structure');
+    throw new Error('Test 3 Failed: Upload returned invalid file ID');
   }
 
   console.log('\n=========================================');

@@ -23,33 +23,29 @@ export async function POST(req: NextRequest) {
 
     const { buffer: selfieBuffer, contentType } = base64ToBuffer(selfieBase64);
 
-    // Parallel execution of Makeup VTO and Clothes VTO
-    const tasks: [Promise<any>, Promise<any>] = [
-      // Task 1: Makeup VTO
+    // Independent parallel execution of Makeup VTO and Clothes VTO with Promise.allSettled
+    const [makeupOutcome, clothesOutcome] = await Promise.allSettled([
       makeupSteps.length > 0
-        ? applyMakeup(selfieBuffer, makeupSteps, contentType).catch((err) => {
-            console.error('Makeup VTO render error:', err);
-            return { resultImageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80', error: err.message };
-          })
-        : Promise.resolve({ resultImageUrl: null }),
-
-      // Task 2: Clothes VTO
-      outfitItem && outfitItem.image_url
+        ? applyMakeup(selfieBuffer, makeupSteps, contentType)
+        : Promise.resolve(null),
+      outfitItem?.image_url
         ? applyOutfit(selfieBuffer, outfitItem.image_url, {
             garmentName: outfitItem.name,
             category: outfitItem.category,
             selfieContentType: contentType,
-          }).catch((err) => {
-            console.error('Clothes VTO render error:', err);
-            return { resultImageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80', error: err.message };
           })
-        : Promise.resolve({ resultImageUrl: null }),
-    ];
+        : Promise.resolve(null),
+    ]);
 
-    const [makeupResult, clothesResult] = await Promise.all(tasks);
+    const makeupResultUrl =
+      makeupOutcome.status === 'fulfilled' ? makeupOutcome.value?.resultImageUrl ?? null : null;
+    const makeupError =
+      makeupOutcome.status === 'rejected' ? makeupOutcome.reason.message : null;
 
-    const makeupResultUrl = makeupResult?.resultImageUrl || null;
-    const outfitResultUrl = clothesResult?.resultImageUrl || null;
+    const outfitResultUrl =
+      clothesOutcome.status === 'fulfilled' ? clothesOutcome.value?.resultImageUrl ?? null : null;
+    const outfitError =
+      clothesOutcome.status === 'rejected' ? clothesOutcome.reason.message : null;
 
     // Update existing session if sessionId is provided
     if (sessionId) {
@@ -57,8 +53,8 @@ export async function POST(req: NextRequest) {
       if (existingSession) {
         await saveLookSession({
           ...existingSession,
-          makeup_result_url: makeupResultUrl,
-          outfit_result_url: outfitResultUrl,
+          makeup_result_url: makeupResultUrl || undefined,
+          outfit_result_url: outfitResultUrl || undefined,
         });
       }
     }
@@ -67,7 +63,9 @@ export async function POST(req: NextRequest) {
       success: true,
       sessionId: sessionId || null,
       makeupResultUrl,
+      makeupError,
       outfitResultUrl,
+      outfitError,
     });
   } catch (err: any) {
     console.error('Render route error:', err);

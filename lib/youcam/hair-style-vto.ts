@@ -63,7 +63,6 @@ export async function applyHairStyleVTO(
   templateId: string = 'style_wavy_lob'
 ): Promise<{ imageUrl: string; template: HairStyleTemplate }> {
   const chosenTemplate = HAIRSTYLE_TEMPLATES.find((t) => t.id === templateId) || HAIRSTYLE_TEMPLATES[0];
-  const fallbackUrl = typeof imageInput === 'string' && imageInput.startsWith('http') ? imageInput : chosenTemplate.previewImageUrl;
 
   try {
     let fileId: string;
@@ -81,25 +80,23 @@ export async function applyHairStyleVTO(
 
     const result = await pollTask<any>('/s2s/v2.1/task/hair-transfer', taskId, {
       timeoutMs: 30000,
-      mockResultGenerator: () => ({ url: fallbackUrl }),
     });
 
     const outputUrl =
       result?.url ||
       result?.results?.url ||
       result?.result?.url ||
-      result?.data?.url ||
-      fallbackUrl;
+      result?.data?.url;
+
+    if (!outputUrl) {
+      throw new Error('YouCam hair style VTO returned no output image URL.');
+    }
 
     return {
       imageUrl: outputUrl,
       template: chosenTemplate,
     };
-  } catch (err) {
-    console.warn('Hair style VTO fallback:', err);
-    return {
-      imageUrl: fallbackUrl,
-      template: chosenTemplate,
-    };
+  } catch (err: any) {
+    throw new Error(`Hair style VTO failed: ${err.message}`);
   }
 }

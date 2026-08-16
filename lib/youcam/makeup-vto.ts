@@ -37,7 +37,6 @@ export function buildMakeupActions(steps: MakeupStep[]): Array<{ id: string; par
       params.pattern = step.pattern;
     }
 
-    // Map internal category name to YouCam action ID
     let actionId: string = step.category;
     if (step.category === 'lip') actionId = 'lipstick';
     if (step.category === 'foundation') actionId = 'foundation';
@@ -50,31 +49,6 @@ export function buildMakeupActions(steps: MakeupStep[]): Array<{ id: string; par
       params,
     };
   });
-}
-
-/**
- * Generates mock makeup result using the user's actual selfie buffer or custom image.
- */
-export function generateMockMakeupResult(
-  steps: MakeupStep[],
-  selfieBuffer?: Buffer,
-  contentType: string = 'image/jpeg'
-): MakeupVTOResult {
-  // Use the user's actual selfie canvas
-  let resultImageUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
-  if (selfieBuffer && selfieBuffer.length > 0) {
-    resultImageUrl = `data:${contentType};base64,${selfieBuffer.toString('base64')}`;
-  }
-
-  return {
-    resultImageUrl,
-    appliedSteps: steps,
-    rawResponse: {
-      status: 'success',
-      mock: true,
-      message: 'Makeup VTO applied on user canvas',
-    },
-  };
 }
 
 /**
@@ -132,7 +106,6 @@ export async function applyMakeup(
     // Step 3: Poll task result
     const rawResult: any = await pollTask('/s2s/v1.0/task/makeup-vto', taskId, {
       timeoutMs: 40000,
-      mockResultGenerator: () => generateMockMakeupResult(steps, selfieBuffer, contentType),
     });
 
     const resultImageUrl =
@@ -141,15 +114,18 @@ export async function applyMakeup(
       rawResult?.file_url ||
       rawResult?.url ||
       rawResult?.results?.output_url ||
-      generateMockMakeupResult(steps, selfieBuffer, contentType).resultImageUrl;
+      rawResult?.results?.files?.[0]?.url;
+
+    if (!resultImageUrl) {
+      throw new Error('YouCam makeup VTO returned no output image URL.');
+    }
 
     return {
       resultImageUrl,
       appliedSteps: steps,
       rawResponse: rawResult,
     };
-  } catch (err) {
-    console.warn('Makeup VTO error, using user selfie canvas fallback:', err);
-    return generateMockMakeupResult(steps, selfieBuffer, contentType);
+  } catch (err: any) {
+    throw new Error(`Makeup VTO failed: ${err.message}`);
   }
 }

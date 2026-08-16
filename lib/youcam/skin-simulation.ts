@@ -34,7 +34,6 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
 
   const mapScore = (score?: number) => {
     if (typeof score !== 'number') return 0.5;
-    // Lower raw score means higher concern -> higher simulation intensity to improve
     return Math.max(0.2, Math.min(0.95, (100 - score) / 90));
   };
 
@@ -62,8 +61,8 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
-  if (skin.concerns.pores) {
-    const raw = skin.concerns.pores.score;
+  if (skin.concerns.pores || skin.concerns.pore) {
+    const raw = skin.concerns.pores?.score ?? skin.concerns.pore?.score ?? 50;
     const intensity = mapScore(raw);
     params.pores = Number(intensity.toFixed(2));
     projected.push({
@@ -116,12 +115,10 @@ export async function simulateSkinOutcome(
 ): Promise<SkinSimulationResponse> {
   const { params, projected } = computeSimulationIntensities(skinAnalysis);
 
-  const fallbackUrl = typeof imageInput === 'string' && imageInput.startsWith('http') ? imageInput : '';
-
   try {
     let fileId: string;
     if (Buffer.isBuffer(imageInput)) {
-      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'simulation_src.jpg');
+      fileId = await uploadFile('/s2s/v1.0/file/skin-analysis', imageInput, 'image/jpeg', 'simulation_src.jpg');
     } else {
       fileId = imageInput;
     }
@@ -129,33 +126,30 @@ export async function simulateSkinOutcome(
     const taskId = await runTask('/s2s/v2.0/task/skin-simulation', {
       src_file_id: fileId.startsWith('http') ? undefined : fileId,
       src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      version: 1.0,
+      version: '1.0',
       dst_actions: params,
     });
 
     const result = await pollTask<any>('/s2s/v2.0/task/skin-simulation', taskId, {
       timeoutMs: 30000,
-      mockResultGenerator: () => ({ url: fallbackUrl }),
     });
 
     const simulatedImageUrl =
       result?.url ||
       result?.results?.url ||
       result?.result?.url ||
-      result?.data?.url ||
-      fallbackUrl;
+      result?.data?.url;
+
+    if (!simulatedImageUrl) {
+      throw new Error('YouCam skin simulation returned no output image URL.');
+    }
 
     return {
       simulatedImageUrl,
       intensityMap: params as Record<string, number>,
       projectedConcerns: projected,
     };
-  } catch (err) {
-    console.warn('Skin simulation service error, returning calibrated result:', err);
-    return {
-      simulatedImageUrl: fallbackUrl,
-      intensityMap: params as Record<string, number>,
-      projectedConcerns: projected,
-    };
+  } catch (err: any) {
+    throw new Error(`Skin simulation failed: ${err.message}`);
   }
 }

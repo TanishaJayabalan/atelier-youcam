@@ -50,18 +50,18 @@ export function generateIdToken(clientId: string, clientSecretPem: string, times
 }
 
 /**
- * Obtains a YouCam bearer access_token from the S2S Auth endpoint or directly uses API key.
+ * Obtains a verified YouCam bearer access_token from the S2S Auth endpoint.
  * Caches the token in memory and proactively refreshes 5 minutes before expiration.
+ * Throws if credentials are missing or authentication fails.
  */
 export async function getAccessToken(forceRefresh = false): Promise<string> {
   const now = Date.now();
-  const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes before 2-hour expiry
+  const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes buffer before 2-hour expiry
 
   if (!forceRefresh && tokenCache && tokenCache.expiresAt > now + REFRESH_BUFFER_MS) {
     return tokenCache.accessToken;
   }
 
-  // Prevent multiple concurrent auth requests
   if (inflightAuthPromise) {
     return inflightAuthPromise;
   }
@@ -69,70 +69,41 @@ export async function getAccessToken(forceRefresh = false): Promise<string> {
   inflightAuthPromise = (async () => {
     const clientId = process.env.YOUCAM_CLIENT_ID;
     const clientSecret = process.env.YOUCAM_CLIENT_SECRET;
-    const apiBase = (process.env.YOUCAM_API_BASE || 'https://yce-api-01.makeupar.com').replace(/\/+$/, '');
+    const apiBase = (process.env.YOUCAM_API_BASE || 'https://yce-api-01.perfectcorp.com').replace(/\/+$/, '');
 
-    if (!clientId) {
-      throw new Error(
-        'Missing YouCam API credentials. Please set YOUCAM_CLIENT_ID in .env.local'
-      );
+    if (!clientId || !clientSecret) {
+      throw new Error('Missing YOUCAM_CLIENT_ID or YOUCAM_CLIENT_SECRET — cannot authenticate with YouCam API.');
     }
 
-    // Support mock mode for local testing without real Perfect Corp keys
-    if (clientId === 'mock_client_id' || !clientSecret || clientSecret.startsWith('mock_')) {
-      // If clientSecret is empty or simple key, return clientId directly as Bearer token (Standard API Key Mode)
-      if (clientId && clientId !== 'mock_client_id') {
-        tokenCache = {
-          accessToken: clientId,
-          expiresAt: now + 24 * 60 * 60 * 1000,
-        };
-        return clientId;
-      }
-      const mockToken = `mock_youcam_token_${Date.now()}`;
-      tokenCache = {
-        accessToken: mockToken,
-        expiresAt: now + 2 * 60 * 60 * 1000,
-      };
-      return mockToken;
+    const idToken = generateIdToken(clientId, clientSecret, now);
+    const authUrl = `${apiBase}/s2s/v1.0/client/auth`;
+
+    const response = await fetch(authUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        id_token: idToken,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`YouCam S2S auth failed: HTTP ${response.status} — ${errText}`);
     }
 
-    // Try RSA S2S OAuth flow if secret looks like a PEM key
-    if (clientSecret.includes('BEGIN') || clientSecret.length > 100) {
-      try {
-        const idToken = generateIdToken(clientId, clientSecret, now);
-        const authUrl = `${apiBase}/s2s/v1.0/client/auth`;
-
-        const response = await fetch(authUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_id: clientId,
-            id_token: idToken,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const token = data?.result?.access_token || data?.data?.access_token || data?.access_token;
-          if (token) {
-            const expiresInMs = (data?.result?.expires_in || 7200) * 1000;
-            tokenCache = {
-              accessToken: token,
-              expiresAt: now + expiresInMs,
-            };
-            return token;
-          }
-        }
-      } catch (e) {
-        console.warn('S2S RSA auth failed, falling back to direct API key token:', e);
-      }
+    const data = await response.json();
+    const token = data?.result?.access_token || data?.data?.access_token || data?.access_token;
+    if (!token) {
+      throw new Error(`YouCam auth response missing access_token: ${JSON.stringify(data)}`);
     }
 
-    // Fallback: Use clientId directly as the Bearer token (YouCam v2.0 standard)
+    // YouCam S2S access tokens are valid for 2 hours (7200s)
     tokenCache = {
-      accessToken: clientId,
-      expiresAt: now + 24 * 60 * 60 * 1000,
+      accessToken: token,
+      expiresAt: now + 2 * 60 * 60 * 1000,
     };
-    return clientId;
+    return token;
   })().finally(() => {
     inflightAuthPromise = null;
   });

@@ -41,19 +41,9 @@ export function formatYouCamError(rawCode?: string, rawMsg?: string): YouCamTask
   };
 }
 
-function getApiBases(): string[] {
-  const custom = process.env.YOUCAM_API_BASE;
-  const list = [
-    custom || 'https://yce-api-01.perfectcorp.com',
-    'https://yce-api-01.perfectcorp.com',
-    'https://yce-api-01.makeupar.com',
-  ];
-  return Array.from(new Set(list)).map((u) => u.replace(/\/+$/, ''));
-}
-
-function isMockMode(): boolean {
-  const clientId = process.env.YOUCAM_CLIENT_ID;
-  return !clientId || clientId === 'mock_client_id';
+function getApiBase(): string {
+  const custom = process.env.YOUCAM_API_BASE || 'https://yce-api-01.perfectcorp.com';
+  return custom.replace(/\/+$/, '');
 }
 
 let numericRequestId = 1000;
@@ -68,7 +58,7 @@ export function generateRequestId(prefix = 'task'): string {
 }
 
 /**
- * Step 1: Upload a file (creates presigned URL, PUTs raw bytes, returns file_id).
+ * Step 1: Upload a file to YouCam S2S storage (creates presigned URL, PUTs raw bytes, returns file_id).
  */
 export async function uploadFile(
   fileEndpoint: string,
@@ -76,170 +66,112 @@ export async function uploadFile(
   contentType: string = 'image/jpeg',
   fileName: string = 'selfie.jpg'
 ): Promise<string> {
-  if (isMockMode()) {
-    return `mock_file_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-  }
-
   const token = await getAccessToken();
-  const apiBases = getApiBases();
+  const base = getApiBase();
+  const normalizedEndpoint = fileEndpoint.startsWith('/') ? fileEndpoint : `/${fileEndpoint}`;
+  const url = `${base}${normalizedEndpoint}`;
 
-  // Try endpoints: /s2s/v1.0/file/skin-analysis -> /s2s/v2.0/file -> /s2s/v1.0/file
-  const candidateEndpoints = [
-    fileEndpoint.startsWith('/') ? fileEndpoint : `/${fileEndpoint}`,
-    '/s2s/v1.0/file/skin-analysis',
-    '/s2s/v2.0/file',
-    '/s2s/v1.0/file',
-  ];
+  const fileInitRes = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      files: [
+        {
+          content_type: contentType,
+          file_name: fileName,
+          file_size: fileBuffer.length,
+        },
+      ],
+    }),
+  });
 
-  let lastError: any = null;
-
-  for (const base of apiBases) {
-    for (const endpoint of candidateEndpoints) {
-      const url = `${base}${endpoint}`;
-      try {
-        const initRes = await fetch(url, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            files: [
-              {
-                content_type: contentType,
-                file_name: fileName,
-                file_size: fileBuffer.length,
-              },
-            ],
-          }),
-        });
-
-        if (!initRes.ok) {
-          const errText = await initRes.text();
-          lastError = new Error(`HTTP ${initRes.status} from ${url}: ${errText}`);
-          continue;
-        }
-
-        const initData = await initRes.json();
-        const fileObj =
-          initData?.result?.files?.[0] ||
-          initData?.data?.files?.[0] ||
-          initData?.files?.[0] ||
-          initData?.result ||
-          initData;
-
-        const fileId = fileObj?.file_id || fileObj?.id;
-        const uploadRequest =
-          fileObj?.requests?.[0] || fileObj?.request || fileObj?.upload_request;
-
-        if (!fileId || !uploadRequest?.url) {
-          lastError = new Error(`Missing file_id/upload URL: ${JSON.stringify(initData)}`);
-          continue;
-        }
-
-        // PUT binary image to presigned URL
-        const uploadHeaders: Record<string, string> = {
-          'Content-Type': contentType,
-          ...(uploadRequest.headers || {}),
-        };
-
-        const uploadRes = await fetch(uploadRequest.url, {
-          method: uploadRequest.method || 'PUT',
-          headers: uploadHeaders,
-          body: fileBuffer as unknown as BodyInit,
-        });
-
-        if (!uploadRes.ok) {
-          const upErr = await uploadRes.text();
-          throw new Error(`Failed to upload bytes to presigned storage: ${upErr}`);
-        }
-
-        return fileId;
-      } catch (err: any) {
-        lastError = err;
-      }
-    }
+  if (!fileInitRes.ok) {
+    const errText = await fileInitRes.text();
+    throw new Error(`YouCam file upload initialization failed: HTTP ${fileInitRes.status} from ${url} — ${errText}`);
   }
 
-  console.warn('Upload fallback to mock file ID due to error:', lastError?.message);
-  return `mock_file_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const fileInitData = await fileInitRes.json();
+  const fileInfo =
+    fileInitData?.result?.files?.[0] ||
+    fileInitData?.data?.files?.[0] ||
+    fileInitData?.files?.[0];
+
+  if (!fileInfo) {
+    throw new Error(`YouCam file upload initialization returned no file info: ${JSON.stringify(fileInitData)}`);
+  }
+
+  const fileId = fileInfo.file_id || fileInfo.id;
+  const presignedRequest = fileInfo.requests?.[0] || fileInfo.request;
+  const presignedUrl = presignedRequest?.url || fileInfo.upload_url;
+
+  if (!presignedUrl) {
+    if (fileId) return fileId;
+    throw new Error(`YouCam file upload initialization returned no presigned URL: ${JSON.stringify(fileInfo)}`);
+  }
+
+  const uploadHeaders: Record<string, string> = {
+    'Content-Type': contentType,
+    ...(presignedRequest?.headers || {}),
+  };
+
+  const uploadRes = await fetch(presignedUrl, {
+    method: presignedRequest?.method || 'PUT',
+    headers: uploadHeaders,
+    body: new Uint8Array(fileBuffer),
+  });
+
+  if (!uploadRes.ok) {
+    const uploadErr = await uploadRes.text();
+    throw new Error(`YouCam upload to presigned URL failed: HTTP ${uploadRes.status} — ${uploadErr}`);
+  }
+
+  return fileId;
 }
 
 /**
- * Step 2: Submit task request to start processing.
+ * Step 2: Create / Run async task on YouCam S2S API.
  */
-export async function runTask(taskEndpoint: string, body: Record<string, any>): Promise<string> {
-  if (isMockMode()) {
-    return `mock_task_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-  }
-
+export async function runTask(
+  taskEndpoint: string,
+  body: Record<string, any>
+): Promise<string> {
   const token = await getAccessToken();
-  const apiBases = getApiBases();
+  const base = getApiBase();
   const normalizedEndpoint = taskEndpoint.startsWith('/') ? taskEndpoint : `/${taskEndpoint}`;
+  const url = `${base}${normalizedEndpoint}`;
 
-  const candidateEndpoints = [
-    normalizedEndpoint,
-    normalizedEndpoint.replace('/v2.0/', '/v1.0/'),
-    normalizedEndpoint.replace('/v1.0/', '/v2.0/'),
-  ];
+  const reqId = typeof body.request_id === 'number' ? body.request_id : generateNumericRequestId();
+  const payload = { request_id: reqId, ...body };
 
-  let lastError: any = null;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 
-  for (const base of apiBases) {
-    for (const endpoint of candidateEndpoints) {
-      const url = `${base}${endpoint}`;
-      try {
-        const reqId = typeof body.request_id === 'number' ? body.request_id : generateNumericRequestId();
-
-        // Support both direct payload body and nested payload: {...} structure
-        const payloads = [
-          {
-            request_id: reqId,
-            ...body,
-          },
-          {
-            request_id: reqId,
-            payload: {
-              ...body,
-            },
-          },
-        ];
-
-        for (const p of payloads) {
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(p),
-          });
-
-          if (!res.ok) {
-            const errText = await res.text();
-            lastError = new Error(`HTTP ${res.status} from ${url}: ${errText}`);
-            continue;
-          }
-
-          const data = await res.json();
-          const taskId =
-            data?.result?.task_id ||
-            data?.data?.task_id ||
-            data?.task_id ||
-            data?.id;
-
-          if (taskId) {
-            return taskId;
-          }
-        }
-      } catch (err: any) {
-        lastError = err;
-      }
-    }
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`YouCam task execution failed: HTTP ${res.status} from ${url} — ${errText}`);
   }
 
-  console.warn('Run task fallback to mock task ID due to error:', lastError?.message);
-  return `mock_task_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const data = await res.json();
+  const taskId =
+    data?.result?.task_id ||
+    data?.data?.task_id ||
+    data?.task_id ||
+    data?.id;
+
+  if (!taskId) {
+    throw new Error(`YouCam task response missing task_id: ${JSON.stringify(data)}`);
+  }
+
+  return taskId;
 }
 
 /**
@@ -251,23 +183,12 @@ export async function pollTask<T = any>(
   options: {
     timeoutMs?: number;
     initialDelayMs?: number;
-    mockResultGenerator?: () => T;
   } = {}
 ): Promise<T> {
-  const { timeoutMs = 35000, initialDelayMs = 1000, mockResultGenerator } = options;
-
-  if (isMockMode() || taskId.startsWith('mock_task_')) {
-    if (mockResultGenerator) {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      return mockResultGenerator();
-    }
-    return { status: 'success', message: 'Task completed' } as unknown as T;
-  }
-
+  const { timeoutMs = 35000, initialDelayMs = 1000 } = options;
   const token = await getAccessToken();
-  const apiBases = getApiBases();
+  const base = getApiBase();
   const normalizedEndpoint = taskEndpoint.startsWith('/') ? taskEndpoint : `/${taskEndpoint}`;
-  const base = apiBases[0];
 
   const startTime = Date.now();
   if (initialDelayMs > 0) {
@@ -275,71 +196,64 @@ export async function pollTask<T = any>(
   }
 
   while (Date.now() - startTime < timeoutMs) {
-    const urls = [
-      `${base}${normalizedEndpoint}?task_id=${encodeURIComponent(taskId)}`,
+    const pollUrls = [
       `${base}${normalizedEndpoint}/${encodeURIComponent(taskId)}`,
+      `${base}${normalizedEndpoint}?task_id=${encodeURIComponent(taskId)}`,
     ];
 
-    let pollSucceeded = false;
+    let lastPollErr: string | null = null;
 
-    for (const url of urls) {
-      try {
-        const res = await fetch(url, {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    for (const url of pollUrls) {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (!res.ok) continue;
-
-        const data = await res.json();
-        const result = data?.result || data?.data || data;
-        const status = (
-          result?.status ||
-          result?.task_status ||
-          data?.status ||
-          data?.task_status ||
-          ''
-        ).toLowerCase();
-
-        if (status === 'success' || status === 'done' || status === 'complete') {
-          return (result?.results || result?.data || result) as T;
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 405) {
+          lastPollErr = `HTTP ${res.status}`;
+          continue;
         }
-
-        if (status === 'error' || status === 'failed') {
-          const errCode = result?.error || result?.error?.code || result?.error_code || data?.error?.code;
-          const errMsg = result?.error?.message || result?.error_message || data?.error?.message;
-          const formatted = formatYouCamError(errCode, errMsg);
-          console.warn('YouCam poll error status:', errCode, '-> falling back to calibrated render');
-          if (mockResultGenerator) {
-            return mockResultGenerator();
-          }
-          throw new Error(formatted.userFriendlyMessage);
+        if (res.status >= 500) {
+          lastPollErr = `HTTP ${res.status}`;
+          break;
         }
-
-        pollSucceeded = true;
-        const intervalMs = result?.polling_interval || data?.polling_interval || 2000;
-        await new Promise((resolve) => setTimeout(resolve, Math.max(500, intervalMs)));
-        break;
-      } catch (err: any) {
-        if (err.message && !err.message.includes('HTTP')) {
-          if (mockResultGenerator) {
-            return mockResultGenerator();
-          }
-          throw err;
-        }
+        const errText = await res.text();
+        throw new Error(`YouCam task polling failed: HTTP ${res.status} — ${errText}`);
       }
+
+      const data = await res.json();
+      const result = data?.result || data?.data || data;
+      const status = (
+        result?.status ||
+        result?.task_status ||
+        data?.status ||
+        data?.task_status ||
+        ''
+      ).toLowerCase();
+
+      if (status === 'success' || status === 'done' || status === 'complete') {
+        return (result?.results || result?.data || result) as T;
+      }
+
+      if (status === 'error' || status === 'failed') {
+        const errCode = result?.error || result?.error?.code || result?.error_code || data?.error?.code;
+        const errMsg = result?.error?.message || result?.error_message || data?.error?.message;
+        const formatted = formatYouCamError(errCode, errMsg);
+        throw new Error(formatted.userFriendlyMessage);
+      }
+
+      const intervalMs = result?.polling_interval || data?.polling_interval || 2000;
+      await new Promise((resolve) => setTimeout(resolve, Math.max(500, intervalMs)));
+      lastPollErr = null;
+      break;
     }
 
-    if (!pollSucceeded) {
+    if (lastPollErr) {
       await new Promise((resolve) => setTimeout(resolve, 1500));
     }
-  }
-
-  if (mockResultGenerator) {
-    console.warn('Poll task timed out, using calibrated result generator.');
-    return mockResultGenerator();
   }
 
   throw new Error(`Task timed out after ${timeoutMs / 1000}s while waiting for YouCam AI.`);

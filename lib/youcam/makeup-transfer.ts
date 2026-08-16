@@ -8,7 +8,7 @@ export interface MakeupTransferRequest {
 export interface MakeupTransferResponse {
   imageUrl: string;
   dstId?: string;
-  status: 'success' | 'fallback';
+  status: 'success';
 }
 
 export async function transferMakeupLook(
@@ -38,22 +38,19 @@ export async function transferMakeupLook(
       ref_file_url: refFileId.startsWith('http') ? refFileId : undefined,
     });
 
-    const fallbackUrl = typeof refImage === 'string' && refImage.startsWith('http') ? refImage : (typeof srcImage === 'string' && srcImage.startsWith('http') ? srcImage : '');
-
     const result = await pollTask<any>('/s2s/v2.0/task/mu-transfer', taskId, {
       timeoutMs: 30000,
-      mockResultGenerator: () => ({
-        url: fallbackUrl,
-        dst_id: `dst_transfer_${Date.now()}`,
-      }),
     });
 
     const outputUrl =
       result?.url ||
       result?.results?.url ||
       result?.result?.url ||
-      result?.data?.url ||
-      fallbackUrl;
+      result?.data?.url;
+
+    if (!outputUrl) {
+      throw new Error('YouCam makeup transfer returned no output image URL.');
+    }
 
     const dstId = result?.dst_id || result?.results?.dst_id;
 
@@ -62,11 +59,7 @@ export async function transferMakeupLook(
       dstId,
       status: 'success',
     };
-  } catch (err) {
-    console.warn('Makeup transfer service error, returning fallback:', err);
-    return {
-      imageUrl: typeof refImage === 'string' && refImage.startsWith('http') ? refImage : '',
-      status: 'fallback',
-    };
+  } catch (err: any) {
+    throw new Error(`Makeup transfer failed: ${err.message}`);
   }
 }

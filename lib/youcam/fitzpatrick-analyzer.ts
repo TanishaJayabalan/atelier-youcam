@@ -1,6 +1,5 @@
 import { uploadFile, runTask, pollTask } from './client';
 import { FitzpatrickResult, FitzpatrickType } from '@/types/beauty-profile';
-import { extractBufferTelemetry, OpticalTelemetry } from '../image-analysis';
 
 const FITZPATRICK_METADATA: Record<
   FitzpatrickType,
@@ -44,47 +43,10 @@ const FITZPATRICK_METADATA: Record<
   },
 };
 
-/**
- * Computes calibrated Fitzpatrick classification from optical telemetry.
- */
-export function computeCalibratedFitzpatrick(telemetry: OpticalTelemetry): FitzpatrickResult {
-  const { luminance = 180, avgR = 210, avgG = 170, avgB = 145 } = telemetry;
-  
-  // Perceived luminance & individual typology angle approximation
-  // ITA = (arctan((L - 50) / b) * 180) / PI
-  const L = (0.299 * avgR + 0.587 * avgG + 0.114 * avgB);
-  
-  let type: FitzpatrickType = 'III';
-  if (L > 220) type = 'I';
-  else if (L > 195) type = 'II';
-  else if (L > 165) type = 'III';
-  else if (L > 135) type = 'IV';
-  else if (L > 100) type = 'V';
-  else type = 'VI';
-
-  const meta = FITZPATRICK_METADATA[type];
-  return {
-    type,
-    label: meta.label,
-    sunReaction: meta.sunReaction,
-    melaninIndex: meta.melaninIndex,
-    description: meta.description,
-  };
-}
-
 export async function analyzeFitzpatrickScale(
-  imageInput: Buffer | string,
-  telemetry?: OpticalTelemetry
+  imageInput: Buffer | string
 ): Promise<FitzpatrickResult> {
   const isBuffer = Buffer.isBuffer(imageInput);
-  const activeTelemetry = telemetry || (isBuffer ? extractBufferTelemetry(imageInput) : undefined);
-
-  const fallback = () => {
-    if (activeTelemetry) {
-      return computeCalibratedFitzpatrick(activeTelemetry);
-    }
-    return FITZPATRICK_METADATA.III as unknown as FitzpatrickResult;
-  };
 
   try {
     let fileId: string;
@@ -102,7 +64,6 @@ export async function analyzeFitzpatrickScale(
 
     const result = await pollTask<any>('/s2s/v2.0/task/fitzpatrick-scale-analyzer', taskId, {
       timeoutMs: 25000,
-      mockResultGenerator: fallback,
     });
 
     const rawType = result?.results?.fitzpatrick_scale || result?.fitzpatrick_scale || result?.type;
@@ -115,8 +76,6 @@ export async function analyzeFitzpatrickScale(
       else if (match.includes('III') || match === 'TYPE 3') resolvedType = 'III';
       else if (match.includes('II') || match === 'TYPE 2') resolvedType = 'II';
       else if (match.includes('I') || match === 'TYPE 1') resolvedType = 'I';
-    } else if (activeTelemetry) {
-      return computeCalibratedFitzpatrick(activeTelemetry);
     }
 
     const meta = FITZPATRICK_METADATA[resolvedType];
@@ -127,8 +86,7 @@ export async function analyzeFitzpatrickScale(
       melaninIndex: meta.melaninIndex,
       description: meta.description,
     };
-  } catch (err) {
-    console.warn('Fitzpatrick analyzer fallback triggered:', err);
-    return fallback();
+  } catch (err: any) {
+    throw new Error(`Fitzpatrick classification failed: ${err.message}`);
   }
 }

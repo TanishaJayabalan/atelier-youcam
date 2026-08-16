@@ -1,26 +1,30 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shirt, CheckCircle2, Sparkle, SplitSquareVertical, Sparkles } from 'lucide-react';
+import { Shirt, CheckCircle2, Sparkle, SplitSquareVertical, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import { OutfitRecommendation } from '@/lib/recommendation-engine';
 
 interface OutfitPreviewProps {
   outfit: OutfitRecommendation;
   renderedImageUrl: string | null;
+  outfitError?: string | null;
   isRendering: boolean;
   originalSelfieUrl?: string | null;
+  onRetry?: () => void;
 }
 
 export default function OutfitPreview({
   outfit,
   renderedImageUrl,
+  outfitError,
   isRendering,
   originalSelfieUrl,
+  onRetry,
 }: OutfitPreviewProps) {
   const { topOrDress, bottom, outerwear, stylingRationale } = outfit;
   const [viewMode, setViewMode] = useState<'fit' | 'paired'>('fit');
 
-  const garmentImage = renderedImageUrl || topOrDress?.image_url || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80';
+  const garmentImage = renderedImageUrl || topOrDress?.image_url;
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 flex flex-col justify-between">
@@ -36,7 +40,7 @@ export default function OutfitPreview({
             </p>
           </div>
 
-          {originalSelfieUrl && (
+          {originalSelfieUrl && garmentImage && (
             <button
               type="button"
               onClick={() => setViewMode(viewMode === 'fit' ? 'paired' : 'fit')}
@@ -50,7 +54,33 @@ export default function OutfitPreview({
 
         {/* Render Image or Shimmer Skeleton */}
         <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-stone-900 border border-stone-200 mb-5 flex items-center justify-center group">
-          {topOrDress ? (
+          {outfitError ? (
+            <div className="p-6 text-center text-stone-300 max-w-sm flex flex-col items-center">
+              <AlertCircle className="w-8 h-8 text-amber-500 mb-2" />
+              <h4 className="text-xs font-bold text-white mb-1">Clothes Try-On Unavailable</h4>
+              <p className="text-[11px] text-stone-400 mb-3">{outfitError}</p>
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className="bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Retry Clothes VTO
+                </button>
+              )}
+            </div>
+          ) : isRendering ? (
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center animate-shimmer relative">
+              <div className="w-10 h-10 rounded-full border-3 border-amber-600 border-t-transparent animate-spin mb-3" />
+              <span className="text-xs font-semibold text-stone-200">
+                Fitting Selected Apparel via YouCam AI...
+              </span>
+              <span className="text-[11px] text-stone-400 mt-1">
+                Synthesizing silhouette &amp; draping from your digital wardrobe
+              </span>
+            </div>
+          ) : garmentImage ? (
             viewMode === 'paired' && originalSelfieUrl ? (
               /* Paired Dual Canvas View */
               <div className="w-full h-full grid grid-cols-2 gap-1.5 bg-stone-950 p-1.5">
@@ -73,7 +103,7 @@ export default function OutfitPreview({
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-2 left-2 bg-stone-900/80 backdrop-blur-xs text-[9px] font-semibold text-white px-2 py-0.5 rounded">
-                    Selected Piece
+                    {renderedImageUrl ? 'YouCam VTO Fit' : 'Selected Piece'}
                   </div>
                 </div>
               </div>
@@ -90,26 +120,18 @@ export default function OutfitPreview({
                 {/* Status Badge */}
                 <div className="absolute bottom-3 right-3 bg-stone-900/80 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  Wardrobe Fit Matched
+                  {renderedImageUrl ? 'YouCam Clothes VTO Rendered' : 'Wardrobe Piece Matched'}
                 </div>
 
                 {/* Garment Tag */}
-                <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                  <Sparkle className="w-3 h-3 text-amber-400" />
-                  <span>{topOrDress.brand}: {topOrDress.name}</span>
-                </div>
+                {topOrDress && (
+                  <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
+                    <Sparkle className="w-3 h-3 text-amber-400" />
+                    <span>{topOrDress.brand}: {topOrDress.name}</span>
+                  </div>
+                )}
               </>
             )
-          ) : isRendering ? (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center animate-shimmer relative">
-              <div className="w-10 h-10 rounded-full border-3 border-amber-600 border-t-transparent animate-spin mb-3" />
-              <span className="text-xs font-semibold text-stone-800">
-                Fitting Selected Apparel Virtually...
-              </span>
-              <span className="text-[11px] text-stone-500 mt-1">
-                Synthesizing silhouette &amp; draping from your digital wardrobe
-              </span>
-            </div>
           ) : (
             <div className="p-6 text-center text-stone-400 text-xs">
               Waiting for analysis...

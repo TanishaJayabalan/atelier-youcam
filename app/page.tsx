@@ -13,11 +13,10 @@ import OutfitPreview from '@/components/OutfitPreview';
 import GapFillShelf from '@/components/GapFillShelf';
 import CelebrityLookPanel from '@/components/CelebrityLookPanel';
 import HairAnalysisPanel from '@/components/HairAnalysisPanel';
-import { WeatherResult, generateMockWeather } from '@/lib/weather';
+import { WeatherResult } from '@/lib/weather';
 import { Recommendation } from '@/lib/recommendation-engine';
 import { SkinAnalysisResult } from '@/lib/youcam/skin-analysis';
 import { SkinToneResult } from '@/lib/youcam/skin-tone';
-import { OpticalTelemetry } from '@/lib/image-analysis';
 import { UserBeautyProfile } from '@/types/beauty-profile';
 
 import { ShoppingBag } from 'lucide-react';
@@ -46,7 +45,6 @@ function HeaderCartButton() {
 function MirrorCheckContent() {
   // Input states
   const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
-  const [opticalTelemetry, setOpticalTelemetry] = useState<OpticalTelemetry | null>(null);
   const [selectedVibe, setSelectedVibe] = useState<VibeType>('classy');
   const [weather, setWeather] = useState<WeatherResult | null>(null);
   const [showCloset, setShowCloset] = useState(false);
@@ -63,7 +61,9 @@ function MirrorCheckContent() {
   const [beautyProfile, setBeautyProfile] = useState<UserBeautyProfile | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [makeupResultUrl, setMakeupResultUrl] = useState<string | null>(null);
+  const [makeupError, setMakeupError] = useState<string | null>(null);
   const [outfitResultUrl, setOutfitResultUrl] = useState<string | null>(null);
+  const [outfitError, setOutfitError] = useState<string | null>(null);
 
   const hasResults = Boolean(recommendation && skinAnalysis && skinTone);
 
@@ -78,10 +78,12 @@ function MirrorCheckContent() {
     setErrorMessage(null);
     setRecommendation(null);
     setMakeupResultUrl(null);
+    setMakeupError(null);
     setOutfitResultUrl(null);
+    setOutfitError(null);
 
     try {
-      // Stage 1: Fast Analysis with client-extracted optical telemetry
+      // Stage 1: Real Multi-AI YouCam Analysis
       const res = await fetch('/api/youcam/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -89,7 +91,6 @@ function MirrorCheckContent() {
           selfieBase64: selectedSelfie,
           vibe: selectedVibe,
           weather,
-          telemetry: opticalTelemetry,
         }),
       });
 
@@ -126,13 +127,74 @@ function MirrorCheckContent() {
 
       const renderData = await renderRes.json();
       if (renderData.success) {
-        setMakeupResultUrl(renderData.makeupResultUrl);
-        setOutfitResultUrl(renderData.outfitResultUrl);
+        setMakeupResultUrl(renderData.makeupResultUrl || null);
+        setMakeupError(renderData.makeupError || null);
+        setOutfitResultUrl(renderData.outfitResultUrl || null);
+        setOutfitError(renderData.outfitError || null);
+      } else {
+        setMakeupError(renderData.error || 'Failed to render makeup try-on.');
+        setOutfitError(renderData.error || 'Failed to render clothes try-on.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'An unexpected error occurred during analysis.');
     } finally {
       setIsAnalyzing(false);
+      setIsRendering(false);
+    }
+  };
+
+  const handleRetryMakeup = async () => {
+    if (!selectedSelfie || !recommendation) return;
+    setIsRendering(true);
+    setMakeupError(null);
+    try {
+      const res = await fetch('/api/youcam/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          selfieBase64: selectedSelfie,
+          makeupSteps: recommendation.makeupSteps,
+          outfitItem: null,
+        }),
+      });
+      const data = await res.json();
+      if (data.makeupResultUrl) {
+        setMakeupResultUrl(data.makeupResultUrl);
+      } else if (data.makeupError) {
+        setMakeupError(data.makeupError);
+      }
+    } catch (err: any) {
+      setMakeupError(err.message || 'Retry failed');
+    } finally {
+      setIsRendering(false);
+    }
+  };
+
+  const handleRetryOutfit = async () => {
+    if (!selectedSelfie || !recommendation?.outfit?.topOrDress) return;
+    setIsRendering(true);
+    setOutfitError(null);
+    try {
+      const res = await fetch('/api/youcam/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          selfieBase64: selectedSelfie,
+          makeupSteps: [],
+          outfitItem: recommendation.outfit.topOrDress,
+        }),
+      });
+      const data = await res.json();
+      if (data.outfitResultUrl) {
+        setOutfitResultUrl(data.outfitResultUrl);
+      } else if (data.outfitError) {
+        setOutfitError(data.outfitError);
+      }
+    } catch (err: any) {
+      setOutfitError(err.message || 'Retry failed');
+    } finally {
       setIsRendering(false);
     }
   };
@@ -183,7 +245,6 @@ function MirrorCheckContent() {
             beautyProfile={beautyProfile || undefined}
             onApplyGeneratedLook={(effects) => {
               if (effects && effects.length > 0) {
-                // If user generates look from closet, alert or refresh
                 console.log('Applied generated look effects:', effects);
               }
             }}
@@ -198,9 +259,8 @@ function MirrorCheckContent() {
           <div className="lg:col-span-7">
             <SelfieCapture
               selectedSelfie={selectedSelfie}
-              onSelfieSelected={(base64, telemetry) => {
+              onSelfieSelected={(base64) => {
                 setSelectedSelfie(base64);
-                setOpticalTelemetry(telemetry || null);
               }}
             />
           </div>
@@ -306,11 +366,11 @@ function MirrorCheckContent() {
             </div>
           </div>
 
-          {/* 2. Three Pillars Explanation Card (Includes Facial Architecture + Skin Simulation) */}
+          {/* 2. Three Pillars Explanation Card */}
           <ExplanationCard
             skin={skinAnalysis}
             skinTone={skinTone}
-            weather={weather || generateMockWeather()}
+            weather={weather || undefined}
             vibe={selectedVibe}
             explanation={recommendation.explanation}
             beautyProfile={beautyProfile || undefined}
@@ -329,16 +389,20 @@ function MirrorCheckContent() {
             <MakeupPreview
               makeupSteps={recommendation.makeupSteps}
               renderedImageUrl={makeupResultUrl}
+              makeupError={makeupError}
               isRendering={isRendering}
               originalSelfieUrl={selectedSelfie}
               beautyProfile={beautyProfile || undefined}
+              onRetry={handleRetryMakeup}
             />
 
             <OutfitPreview
               outfit={recommendation.outfit}
               renderedImageUrl={outfitResultUrl}
+              outfitError={outfitError}
               isRendering={isRendering}
               originalSelfieUrl={selectedSelfie}
+              onRetry={handleRetryOutfit}
             />
           </div>
 

@@ -1,10 +1,15 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { getSupabaseServerClient, isSupabaseConfigured, inMemoryStore, ClosetItem } from '../lib/supabase';
-
-// Load environment variables from .env.local
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+import { getSupabaseServerClient, ClosetItem } from '../lib/supabase';
+
+function stringToUuid(str: string): string {
+  const hash = crypto.createHash('md5').update(str).digest('hex');
+  return `${hash.substring(0, 8)}-${hash.substring(8, 12)}-4${hash.substring(13, 16)}-8${hash.substring(17, 20)}-${hash.substring(20, 32)}`;
+}
 
 async function seedDatabase() {
   console.log('--- Seeding Mirror Check Demo Closet ---');
@@ -18,35 +23,29 @@ async function seedDatabase() {
   const items: ClosetItem[] = JSON.parse(rawData);
 
   console.log(`Read ${items.length} items from demo-closet.json`);
-  console.log(`- Outfits: ${items.filter(i => i.category.startsWith('outfit_')).length}`);
-  console.log(`- Makeup: ${items.filter(i => i.category === 'makeup').length}`);
-  console.log(`- Skincare: ${items.filter(i => i.category === 'skincare').length}`);
+  console.log(`- Outfits: ${items.filter((i) => i.category.startsWith('outfit_')).length}`);
+  console.log(`- Makeup: ${items.filter((i) => i.category === 'makeup').length}`);
+  console.log(`- Skincare: ${items.filter((i) => i.category === 'skincare').length}`);
 
-  // Seed in-memory store
-  inMemoryStore.setItems(items);
-  console.log('✓ In-memory store successfully initialized with seed data.');
+  const cleaned = items.map((item) => ({
+    id: stringToUuid(item.id),
+    category: item.category,
+    name: item.name,
+    brand: item.brand,
+    image_url: item.image_url,
+    is_owned: item.is_owned,
+    metadata: item.metadata,
+  }));
 
-  // If Supabase is connected, seed into Supabase Postgres
-  if (isSupabaseConfigured()) {
-    console.log('Detected active Supabase configuration. Upserting into PostgreSQL...');
-    const supabase = getSupabaseServerClient();
-    if (!supabase) {
-      console.warn('Could not initialize Supabase server client.');
-      return;
-    }
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from('closet_items').upsert(cleaned, { onConflict: 'id' });
 
-    const { error } = await supabase.from('closet_items').upsert(items, { onConflict: 'id' });
-
-    if (error) {
-      console.error('Supabase seeding error:', error.message);
-      throw error;
-    }
-
-    console.log('✓ Successfully seeded all items into Supabase `closet_items` table!');
-  } else {
-    console.log('ℹ Supabase not configured in .env.local — items loaded in local in-memory store.');
+  if (error) {
+    console.error('Supabase seeding error:', error.message);
+    throw error;
   }
 
+  console.log('✓ Successfully seeded all items into Supabase `closet_items` table!');
   console.log('\n=========================================');
   console.log('Component 9 (Demo Closet) seeding COMPLETE!');
   console.log('=========================================\n');

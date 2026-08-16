@@ -71,7 +71,6 @@ export async function applyHairColorVTO(
   colorId: string = 'color_caramel_balayage'
 ): Promise<{ imageUrl: string; shade: HairColorShade }> {
   const chosenShade = HAIR_COLOR_SHADES.find((c) => c.id === colorId) || HAIR_COLOR_SHADES[0];
-  const fallbackUrl = typeof imageInput === 'string' && imageInput.startsWith('http') ? imageInput : '';
 
   try {
     let fileId: string;
@@ -96,25 +95,23 @@ export async function applyHairColorVTO(
 
     const result = await pollTask<any>('/s2s/v2.0/task/hair-color', taskId, {
       timeoutMs: 30000,
-      mockResultGenerator: () => ({ url: fallbackUrl }),
     });
 
     const outputUrl =
       result?.url ||
       result?.results?.url ||
       result?.result?.url ||
-      result?.data?.url ||
-      fallbackUrl;
+      result?.data?.url;
+
+    if (!outputUrl) {
+      throw new Error('YouCam hair color VTO returned no output image URL.');
+    }
 
     return {
       imageUrl: outputUrl,
       shade: chosenShade,
     };
-  } catch (err) {
-    console.warn('Hair color VTO fallback:', err);
-    return {
-      imageUrl: fallbackUrl,
-      shade: chosenShade,
-    };
+  } catch (err: any) {
+    throw new Error(`Hair color VTO failed: ${err.message}`);
   }
 }

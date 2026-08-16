@@ -1,10 +1,14 @@
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
 import crypto from 'crypto';
 import { formatPublicKeyPem, generateIdToken, getAccessToken, resetTokenCache } from '../lib/youcam/auth';
 
 async function runAuthTests() {
   console.log('--- Testing Component 1: YouCam Authentication Module ---');
 
-  // Test 1: RSA Key Generation & Encryption
+  // Test 1: RSA Key Encryption & Decryption
   console.log('\n[Test 1] Generating RSA key pair and encrypting id_token...');
   const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
@@ -34,24 +38,26 @@ async function runAuthTests() {
     throw new Error('Test 1 Failed: Decrypted payload mismatch');
   }
 
-  // Test 2: In-Memory Caching
-  console.log('\n[Test 2] Testing token caching mechanism...');
+  // Test 2: Live YouCam S2S OAuth Token Retrieval
+  console.log('\n[Test 2] Testing real YouCam S2S Auth with credentials from .env.local...');
   resetTokenCache();
 
-  // Test mock mode auth call
-  process.env.YOUCAM_CLIENT_ID = 'mock_client_id';
-  process.env.YOUCAM_CLIENT_SECRET = publicKey;
-
   const token1 = await getAccessToken();
-  console.log('First token call:', token1);
+  console.log('First token call (length ' + token1.length + '):', token1.substring(0, 20) + '...');
 
+  if (!token1 || token1.includes('mock')) {
+    throw new Error('Test 2 Failed: Did not receive a real YouCam token');
+  }
+
+  // Test 3: In-Memory Caching
+  console.log('\n[Test 3] Testing token caching mechanism...');
   const token2 = await getAccessToken();
-  console.log('Second token call (should be cached):', token2);
+  console.log('Second token call (cached):', token2.substring(0, 20) + '...');
 
-  if (token1 === token2 && token1.startsWith('mock_youcam_token_')) {
-    console.log('✓ Test 2 Passed: In-memory cache returns identical token without re-fetching.');
+  if (token1 === token2) {
+    console.log('✓ Test 3 Passed: In-memory cache returns identical token without re-fetching.');
   } else {
-    throw new Error('Test 2 Failed: Token caching failed');
+    throw new Error('Test 3 Failed: Token caching failed');
   }
 
   console.log('\n=========================================');

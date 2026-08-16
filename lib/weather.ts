@@ -173,31 +173,3 @@ export async function geocodeCity(query: string): Promise<{
     longitude: first.longitude,
   };
 }
-
-/**
- * Mock weather generator for testing or fallback.
- */
-export function generateMockWeather(): WeatherResult {
-  const tempC = 24.5;
-  const humidity = 42;
-  const uvIndex = 7.2;
-  const precipitationMm = 0;
-
-  return {
-    city: 'San Francisco',
-    country: 'United States',
-    latitude: 37.7749,
-    longitude: -122.4194,
-    tempC,
-    tempF: 76.1,
-    apparentTempC: 24.0,
-    humidity,
-    uvIndex,
-    precipitationMm,
-    isDay: true,
-    weatherCode: 1,
-    condition: 'Mainly Clear',
-    conditionCategory: 'warm',
-    skinAdvisory: generateSkinAdvisory({ tempC, humidity, uvIndex, precipitationMm }),
-  };
-}

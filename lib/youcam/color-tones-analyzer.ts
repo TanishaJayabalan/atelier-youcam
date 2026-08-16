@@ -1,16 +1,5 @@
 import { uploadFile, runTask, pollTask } from './client';
 import { ColorTonesResult } from '@/types/beauty-profile';
-import { extractBufferTelemetry, OpticalTelemetry } from '../image-analysis';
-
-function rgbToHex(r: number, g: number, b: number): string {
-  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
-  return (
-    '#' +
-    [clamp(r), clamp(g), clamp(b)]
-      .map((x) => x.toString(16).padStart(2, '0'))
-      .join('')
-  );
-}
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   let c = hex.replace('#', '');
@@ -27,8 +16,6 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 
 export function detectUndertone(skinHex: string): 'warm' | 'cool' | 'neutral' | 'olive' {
   const { r, g, b } = hexToRgb(skinHex);
-  
-  // Chromatic red-blue vs red-green balance
   const rbRatio = r / Math.max(b, 1);
   const rgRatio = r / Math.max(g, 1);
   const gbRatio = g / Math.max(b, 1);
@@ -45,50 +32,10 @@ export function detectUndertone(skinHex: string): 'warm' | 'cool' | 'neutral' | 
   return 'neutral';
 }
 
-export function computeCalibratedColorTones(telemetry: OpticalTelemetry): ColorTonesResult {
-  const { avgR = 210, avgG = 170, avgB = 145 } = telemetry;
-  const skinColor = rgbToHex(avgR, avgG, avgB);
-  const undertone = detectUndertone(skinColor);
-
-  // Calibrated default facial feature color approximations from skin telemetry
-  const lipColor = rgbToHex(Math.min(255, avgR * 1.08), Math.max(40, avgG * 0.65), Math.max(40, avgB * 0.72));
-  const eyebrowColor = rgbToHex(Math.max(30, avgR * 0.35), Math.max(25, avgG * 0.32), Math.max(20, avgB * 0.3));
-  const hairColor = rgbToHex(Math.max(25, avgR * 0.25), Math.max(20, avgG * 0.22), Math.max(18, avgB * 0.2));
-
-  return {
-    skinColor,
-    eyeColor: '#4A3728',
-    eyeColorName: 'Brown',
-    lipColor,
-    eyebrowColor,
-    hairColor,
-    hairColorName: 'Black',
-    undertone,
-  };
-}
-
 export async function analyzeColorTones(
-  imageInput: Buffer | string,
-  telemetry?: OpticalTelemetry
+  imageInput: Buffer | string
 ): Promise<ColorTonesResult> {
   const isBuffer = Buffer.isBuffer(imageInput);
-  const activeTelemetry = telemetry || (isBuffer ? extractBufferTelemetry(imageInput) : undefined);
-
-  const fallback = () => {
-    if (activeTelemetry) {
-      return computeCalibratedColorTones(activeTelemetry);
-    }
-    return {
-      skinColor: '#DFAC82',
-      eyeColor: '#3A2E2B',
-      eyeColorName: 'Brown' as const,
-      lipColor: '#C86267',
-      eyebrowColor: '#4A3B32',
-      hairColor: '#2B211D',
-      hairColorName: 'Brown' as const,
-      undertone: 'warm' as const,
-    };
-  };
 
   try {
     let fileId: string;
@@ -106,11 +53,10 @@ export async function analyzeColorTones(
 
     const result = await pollTask<any>('/s2s/v2.0/task/skin-tone-analysis', taskId, {
       timeoutMs: 25000,
-      mockResultGenerator: fallback,
     });
 
     const colorObj = result?.results?.color || result?.color || {};
-    const skinColor = colorObj.skin_color || (activeTelemetry ? rgbToHex(activeTelemetry.avgR, activeTelemetry.avgG, activeTelemetry.avgB) : '#DFAC82');
+    const skinColor = colorObj.skin_color || '#DFAC82';
     const eyeColor = colorObj.eye_color || '#3A2E2B';
     const eyeColorName = colorObj.eye_color_name || 'Brown';
     const lipColor = colorObj.lip_color || '#C86267';
@@ -129,8 +75,7 @@ export async function analyzeColorTones(
       hairColorName,
       undertone,
     };
-  } catch (err) {
-    console.warn('Color tones analyzer fallback triggered:', err);
-    return fallback();
+  } catch (err: any) {
+    throw new Error(`Color tones analysis failed: ${err.message}`);
   }
 }

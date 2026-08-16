@@ -1,5 +1,4 @@
 import { uploadFile, runTask, pollTask } from './client';
-import { computeRealSkinTone, extractBufferTelemetry, OpticalTelemetry } from '../image-analysis';
 
 export type Undertone = 'warm' | 'cool' | 'neutral';
 export type SeasonalPalette = 'Spring' | 'Summer' | 'Autumn' | 'Winter';
@@ -34,6 +33,37 @@ export interface SkinToneResult {
   eyebrow_color?: string;
   eyebrowColorHex?: string;
   rawResponse?: any;
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  let c = hex.replace('#', '');
+  if (c.length === 3) {
+    c = c.split('').map((char) => char + char).join('');
+  }
+  const num = parseInt(c, 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255,
+  };
+}
+
+export function detectUndertone(skinHex: string): Undertone {
+  const { r, g, b } = hexToRgb(skinHex);
+  const rbRatio = r / Math.max(b, 1);
+  const rgRatio = r / Math.max(g, 1);
+  const gbRatio = g / Math.max(b, 1);
+
+  if (gbRatio > 1.25 && rbRatio < 1.45) {
+    return 'neutral';
+  }
+  if (rbRatio > 1.55 && rgRatio < 1.28) {
+    return 'warm';
+  }
+  if (rbRatio < 1.35 || b > g * 0.85) {
+    return 'cool';
+  }
+  return 'neutral';
 }
 
 export function getHarmonizedPalette(season: SeasonalPalette, undertone: Undertone = 'warm'): SkinTonePalette {
@@ -114,60 +144,77 @@ export function getHarmonizedPalette(season: SeasonalPalette, undertone: Underto
   return harmonies[season] || harmonies.Autumn;
 }
 
-export function normalizeSkinToneResponse(raw: any, selfieBuffer?: Buffer, telemetry?: OpticalTelemetry): SkinToneResult {
-  if (telemetry) {
-    return computeRealSkinTone(telemetry);
-  }
-  if (selfieBuffer && selfieBuffer.length > 0) {
-    const extracted = extractBufferTelemetry(selfieBuffer);
-    return computeRealSkinTone(extracted);
+export function normalizeSkinToneResponse(raw: any): SkinToneResult {
+  const colorObj = raw?.color || raw?.results?.color || raw?.result?.color || {};
+  const skinHex = colorObj.skin_color || colorObj.hex || raw?.skin_color || '#DFAC82';
+  const rgb = hexToRgb(skinHex);
+
+  const rawUndertone = (colorObj.undertone || raw?.undertone || '').toLowerCase();
+  let undertone: Undertone = 'neutral';
+  if (rawUndertone.includes('warm')) undertone = 'warm';
+  else if (rawUndertone.includes('cool')) undertone = 'cool';
+  else undertone = detectUndertone(skinHex);
+
+  const ita = typeof colorObj.ita === 'number' ? colorObj.ita : 35;
+  const lab = colorObj.lab || { l: 65, a: 12, b: 18 };
+
+  let season: SeasonalPalette = 'Autumn';
+  if (undertone === 'warm') {
+    season = ita > 40 ? 'Spring' : 'Autumn';
+  } else if (undertone === 'cool') {
+    season = ita > 40 ? 'Summer' : 'Winter';
+  } else {
+    season = ita > 45 ? 'Spring' : 'Autumn';
   }
 
-  return computeRealSkinTone({
-    avgR: 215,
-    avgG: 175,
-    avgB: 150,
-    rednessRatio: 0.2,
-    specularRatio: 0.14,
-    roughnessVariance: 14,
-    underEyeContrast: 0.1,
-    luminance: 180,
-  });
-}
+  const palette = getHarmonizedPalette(season, undertone);
 
-export function generateMockSkinTone(selfieBuffer?: Buffer, telemetry?: OpticalTelemetry): SkinToneResult {
-  if (telemetry) {
-    return computeRealSkinTone(telemetry);
-  }
-  if (selfieBuffer && selfieBuffer.length > 0) {
-    const extracted = extractBufferTelemetry(selfieBuffer);
-    return computeRealSkinTone(extracted);
-  }
-
-  return computeRealSkinTone({
-    avgR: 215,
-    avgG: 175,
-    avgB: 150,
-    rednessRatio: 0.2,
-    specularRatio: 0.14,
-    roughnessVariance: 14,
-    underEyeContrast: 0.1,
-    luminance: 180,
-  });
+  return {
+    hexCode: skinHex,
+    skinToneHex: skinHex,
+    rgb,
+    lab,
+    ita,
+    undertone,
+    season,
+    seasonPalette: season,
+    palette,
+    flatteringColors: palette.flattering,
+    avoidColors: palette.avoid,
+    colorHarmonyDescription: palette.description,
+    confidence: 0.95,
+    hair_color: colorObj.hair_color,
+    eye_color: colorObj.eye_color,
+    lip_color: colorObj.lip_color,
+    eyebrow_color: colorObj.eyebrow_color,
+    eyebrowColorHex: colorObj.eyebrow_color,
+    rawResponse: raw,
+  };
 }
 
 export async function analyzeSkinTone(
   selfieBuffer: Buffer,
-  contentType: string = 'image/jpeg',
-  telemetry?: OpticalTelemetry
+  contentType: string = 'image/jpeg'
 ): Promise<SkinToneResult> {
-  if (telemetry) {
-    return computeRealSkinTone(telemetry);
-  }
-  if (selfieBuffer && selfieBuffer.length > 0) {
-    const extracted = extractBufferTelemetry(selfieBuffer);
-    return computeRealSkinTone(extracted);
-  }
+  try {
+    const fileId = await uploadFile(
+      '/s2s/v2.0/file',
+      selfieBuffer,
+      contentType,
+      'selfie_skin_tone.jpg'
+    );
 
-  return generateMockSkinTone(selfieBuffer, telemetry);
+    const taskId = await runTask('/s2s/v2.0/task/skin-tone-analysis', {
+      src_file_id: fileId,
+      face_angle_strictness_level: 'medium',
+    });
+
+    const rawResult = await pollTask('/s2s/v2.0/task/skin-tone-analysis', taskId, {
+      timeoutMs: 30000,
+    });
+
+    return normalizeSkinToneResponse(rawResult);
+  } catch (err: any) {
+    throw new Error(`Skin tone analysis failed: ${err.message}`);
+  }
 }

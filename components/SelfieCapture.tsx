@@ -2,27 +2,26 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Camera, Upload, RefreshCw, Sparkles, CheckCircle2, Image as ImageIcon, VideoOff, Aperture } from 'lucide-react';
-import { OpticalTelemetry } from '@/lib/image-analysis';
 
 interface SelfieCaptureProps {
-  onSelfieSelected: (base64: string | null, telemetry?: OpticalTelemetry) => void;
+  onSelfieSelected: (base64: string | null) => void;
   selectedSelfie: string | null;
 }
 
 const SAMPLE_SELFIES = [
   {
     id: 'sample_acne',
-    label: '🎯 Active Blemishes & Texture (75% Face Coverage)',
+    label: '🎯 Blemishes & Texture Portrait',
     url: 'https://images.unsplash.com/photo-1597223557154-721c1cecc4b0?auto=format&fit=crop&w=800&q=80',
   },
   {
     id: 'sample_1',
-    label: 'Studio Portrait (Warm Golden Tone)',
+    label: 'Studio Portrait (Warm Golden)',
     url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
   },
   {
     id: 'sample_2',
-    label: 'Natural Daylight (Neutral Undertone)',
+    label: 'Natural Daylight (Neutral)',
     url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -31,156 +30,6 @@ const SAMPLE_SELFIES = [
     url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80',
   },
 ];
-
-/**
- * Extracts real optical skin telemetry from an HTML Canvas element across the full facial oval (forehead + cheeks + chin).
- */
-function analyzeCanvasPixels(canvas: HTMLCanvasElement): OpticalTelemetry {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    return {
-      avgR: 195,
-      avgG: 155,
-      avgB: 135,
-      rednessRatio: 0.22,
-      specularRatio: 0.15,
-      roughnessVariance: 18,
-      underEyeContrast: 0.12,
-      luminance: 165,
-      blemishDensity: 0.05,
-    };
-  }
-
-  const w = canvas.width;
-  const h = canvas.height;
-  const startX = Math.floor(w * 0.15);
-  const startY = Math.floor(h * 0.12);
-  const sampleW = Math.floor(w * 0.7);
-  const sampleH = Math.floor(h * 0.72);
-
-  const imgData = ctx.getImageData(startX, startY, sampleW, sampleH);
-  const data = imgData.data;
-
-  let rSum = 0;
-  let gSum = 0;
-  let bSum = 0;
-  let count = 0;
-  let highRedCount = 0;
-  let highLumaCount = 0;
-  let blemishCount = 0;
-  let varianceSum = 0;
-  let prevLuma = 128;
-
-  // Sample every 4th pixel for speed & high accuracy
-  for (let i = 0; i < data.length; i += 16) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-
-    // Filter for skin-tone range
-    if (r > 35 && g > 20 && b > 10 && r >= g && r >= b) {
-      rSum += r;
-      gSum += g;
-      bSum += b;
-      count++;
-
-      const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-      if (luma > 210) highLumaCount++;
-
-      // Erythema / Redness indicator
-      if (r > g * 1.35 && r > b * 1.35) {
-        highRedCount++;
-      }
-
-      // Localized Blemish / Acne papule detection (High-contrast red micro-spots)
-      const diffLuma = Math.abs(luma - prevLuma);
-      if (r > g + 16 && r > b + 18 && diffLuma > 14) {
-        blemishCount++;
-      }
-
-      varianceSum += diffLuma;
-      prevLuma = luma;
-    }
-  }
-
-  const validCount = Math.max(1, count);
-  const avgR = Math.round(rSum / validCount);
-  const avgG = Math.round(gSum / validCount);
-  const avgB = Math.round(bSum / validCount);
-
-  return {
-    avgR,
-    avgG,
-    avgB,
-    rednessRatio: highRedCount / validCount,
-    specularRatio: highLumaCount / validCount,
-    roughnessVariance: varianceSum / validCount,
-    underEyeContrast: Math.abs(avgR - avgB) / 255,
-    luminance: Math.round(0.299 * avgR + 0.587 * avgG + 0.114 * avgB),
-    blemishDensity: blemishCount / validCount,
-  };
-}
-
-/**
- * Automatically detects the face boundary and produces an optimal, high-density portrait crop
- * so YouCam's internal AI face detector evaluates face area as > 70% and never triggers error_src_face_too_small.
- */
-function createOptimalFaceFramedSelfie(canvas: HTMLCanvasElement): { base64: string; telemetry: OpticalTelemetry } {
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-  const telemetry = analyzeCanvasPixels(canvas);
-
-  if (!ctx) {
-    return { base64: canvas.toDataURL('image/jpeg', 0.95), telemetry };
-  }
-
-  const imgData = ctx.getImageData(0, 0, w, h);
-  const data = imgData.data;
-
-  let minX = w, maxX = 0, minY = h, maxY = 0;
-  let count = 0;
-
-  for (let y = 0; y < h; y += 8) {
-    for (let x = 0; x < w; x += 8) {
-      const idx = (y * w + x) * 4;
-      const r = data[idx];
-      const g = data[idx + 1];
-      const b = data[idx + 2];
-      if (r > 60 && g > 35 && b > 20 && r > g && r > b && (r - g) >= 12) {
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-        count++;
-      }
-    }
-  }
-
-  const faceW = maxX - minX;
-  const faceH = maxY - minY;
-  const faceAreaRatio = (faceW * faceH) / (w * h);
-
-  // If face takes up less than 65% of the frame, crop tightly around face with 20% margin
-  if (count > 80 && faceAreaRatio < 0.65 && faceW > 40 && faceH > 40) {
-    const margin = Math.max(faceW, faceH) * 0.22;
-    const cropX = Math.max(0, minX - margin);
-    const cropY = Math.max(0, minY - margin * 0.85);
-    const cropW = Math.min(w - cropX, faceW + margin * 2);
-    const cropH = Math.min(h - cropY, faceH + margin * 2);
-
-    const outCanvas = document.createElement('canvas');
-    outCanvas.width = 800;
-    outCanvas.height = 800;
-    const outCtx = outCanvas.getContext('2d');
-    if (outCtx) {
-      outCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, 800, 800);
-      return { base64: outCanvas.toDataURL('image/jpeg', 0.95), telemetry };
-    }
-  }
-
-  return { base64: canvas.toDataURL('image/jpeg', 0.95), telemetry };
-}
 
 export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: SelfieCaptureProps) {
   const [sourceType, setSourceType] = useState<'camera' | 'upload' | 'samples'>('camera');
@@ -194,7 +43,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Convert image URL to base64 and analyze telemetry
+  // Convert image URL to base64
   const loadUrlAsBase64 = useCallback(async (url: string) => {
     try {
       const res = await fetch(url);
@@ -204,7 +53,6 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
         const rawBase64 = reader.result as string;
         setCapturedFromCamera(false);
 
-        // Analyze image telemetry & auto-frame face
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
@@ -214,8 +62,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0);
-            const { base64, telemetry } = createOptimalFaceFramedSelfie(canvas);
-            onSelfieSelected(base64, telemetry);
+            onSelfieSelected(canvas.toDataURL('image/jpeg', 0.95));
           } else {
             onSelfieSelected(rawBase64);
           }
@@ -228,12 +75,17 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
     }
   }, [onSelfieSelected]);
 
+  const isStartingRef = useRef(false);
+
   // Start live webcam stream
   const startCamera = useCallback(async () => {
+    if (isStartingRef.current) return;
+    isStartingRef.current = true;
     setCameraError(null);
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -246,13 +98,23 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        try {
+          await videoRef.current.play();
+        } catch (playErr: any) {
+          if (playErr.name !== 'AbortError') {
+            console.warn('Video play error:', playErr);
+          }
+        }
       }
       setCameraActive(true);
     } catch (err: any) {
-      console.warn('Camera error:', err);
-      setCameraError('Camera access denied or unavailable. Please enable permissions or use sample presets.');
+      if (err.name !== 'AbortError') {
+        console.warn('Camera permission error:', err);
+        setCameraError('Camera access denied or unavailable. Please enable permissions or use sample presets.');
+      }
       setCameraActive(false);
+    } finally {
+      isStartingRef.current = false;
     }
   }, []);
 
@@ -277,30 +139,27 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
     };
   }, [sourceType, capturedFromCamera, startCamera, stopCamera]);
 
-  // Capture photo from webcam and analyze in real-time
+  // Capture photo from webcam
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    const width = video.videoWidth || 640;
-    const height = video.videoHeight || 640;
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 1280;
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      // Mirror horizontal to match selfie camera view
       ctx.translate(width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, width, height);
-      // Extract real optical telemetry & auto-frame face tightly for YouCam
-      const { base64, telemetry } = createOptimalFaceFramedSelfie(canvas);
+      const base64 = canvas.toDataURL('image/jpeg', 0.95);
 
-      // Visual flash effect
       setFlash(true);
       setTimeout(() => setFlash(false), 200);
 
       setCapturedFromCamera(true);
-      onSelfieSelected(base64, telemetry);
+      onSelfieSelected(base64);
       stopCamera();
     }
   };
@@ -329,9 +188,8 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0);
-          const { base64, telemetry } = createOptimalFaceFramedSelfie(canvas);
           setCapturedFromCamera(false);
-          onSelfieSelected(base64, telemetry);
+          onSelfieSelected(canvas.toDataURL('image/jpeg', 0.95));
         } else {
           setCapturedFromCamera(false);
           onSelfieSelected(rawBase64);
@@ -375,7 +233,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
             1. Your Portrait &amp; Facial Canvas
           </h2>
           <p className="text-xs text-stone-500 mt-0.5">
-            Real-time biometric optical scanning for skin concerns and color harmony.
+            Real YouCam AI biometric facial analysis for skin health and color harmony.
           </p>
         </div>
 
@@ -432,10 +290,8 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
 
       {/* Main Area */}
       <div className="relative mt-2">
-        {/* Flash Effect */}
         {flash && <div className="absolute inset-0 bg-white z-20 pointer-events-none transition-opacity" />}
 
-        {/* State A: Photo is captured or selected -> Show Preview */}
         {selectedSelfie && (capturedFromCamera || sourceType !== 'camera') ? (
           <div className="relative rounded-2xl overflow-hidden bg-stone-950 border border-stone-200 aspect-[4/3] max-h-80 flex items-center justify-center group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -456,11 +312,10 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
             </div>
             <div className="absolute bottom-3 left-3 bg-stone-900/80 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              {capturedFromCamera ? 'Live Camera Snap Ready' : 'Portrait Biometrics Ready'}
+              {capturedFromCamera ? 'Live Camera Snap Ready' : 'Portrait Ready'}
             </div>
           </div>
         ) : sourceType === 'camera' ? (
-          /* State B: Live Camera View */
           <div className="relative rounded-2xl overflow-hidden bg-stone-950 aspect-[4/3] max-h-80 flex flex-col items-center justify-center border border-stone-200">
             {cameraError ? (
               <div className="p-6 text-center text-stone-300">
@@ -519,7 +374,6 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
             )}
           </div>
         ) : (
-          /* State C: File Upload Dropzone */
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -559,7 +413,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
             <ImageIcon className="w-3.5 h-3.5 text-stone-500" />
             Select Preset Model Canvas:
           </p>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {SAMPLE_SELFIES.map((sample) => (
               <button
                 key={sample.id}

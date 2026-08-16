@@ -1,17 +1,48 @@
 import { generateRecommendation } from '../lib/recommendation-engine';
-import { generateMockSkinAnalysis } from '../lib/youcam/skin-analysis';
-import { generateMockSkinTone } from '../lib/youcam/skin-tone';
-import { generateMockWeather } from '../lib/weather';
+import { normalizeSkinAnalysisResponse, SkinAnalysisResult } from '../lib/youcam/skin-analysis';
+import { normalizeSkinToneResponse, SkinToneResult } from '../lib/youcam/skin-tone';
+import { fetchWeather, WeatherResult } from '../lib/weather';
 import demoCloset from '../data/demo-closet.json';
 import { ClosetItem } from '../lib/supabase';
 
 async function runRecommendationTests() {
   console.log('--- Testing Component 10: Recommendation Engine ---');
 
-  const skin = generateMockSkinAnalysis();
-  skin.concerns.redness = { key: 'redness', displayName: 'Erythema & Active Redness', score: 68, severity: 'high' };
-  const skinTone = generateMockSkinTone(); // warm undertone
-  const weather = generateMockWeather(); // tempC: 24.5, uvIndex: 7.2 (high)
+  const skin: SkinAnalysisResult = normalizeSkinAnalysisResponse({
+    overall_score: 80,
+    skin_type: 'combination',
+    concerns: {
+      redness: { score: 68 },
+      pores: { score: 30 },
+      acne: { score: 10 },
+    },
+  });
+
+  const skinTone: SkinToneResult = normalizeSkinToneResponse({
+    color: {
+      skin_color: '#E8C5A0',
+      undertone: 'warm',
+      ita: 40,
+    },
+  });
+
+  const weather: WeatherResult = {
+    city: 'San Francisco',
+    latitude: 37.7749,
+    longitude: -122.4194,
+    tempC: 24.5,
+    tempF: 76.1,
+    apparentTempC: 24.0,
+    humidity: 42,
+    uvIndex: 7.2,
+    precipitationMm: 0,
+    isDay: true,
+    weatherCode: 1,
+    condition: 'Mainly Clear',
+    conditionCategory: 'warm',
+    skinAdvisory: ['High UV Index (7.2)'],
+  };
+
   const closet = demoCloset as ClosetItem[];
 
   // Test 1: Redness & Retinol Conflict Detection
@@ -24,8 +55,8 @@ async function runRecommendationTests() {
     closet,
   });
 
-  const rednessWarning = recClassy.skincareNotes.warnings.find(w => w.includes('Redness Detected'));
-  const pmRetinolStep = recClassy.skincareNotes.pmSteps.find(s => s.isModified);
+  const rednessWarning = recClassy.skincareNotes.warnings.find((w) => w.includes('Redness Detected'));
+  const pmRetinolStep = recClassy.skincareNotes.pmSteps.find((s) => s.isModified);
 
   console.log('Redness Warning:', rednessWarning);
   console.log('Modified PM Step:', pmRetinolStep?.productName, '-> Note:', pmRetinolStep?.actionNote);
@@ -37,8 +68,8 @@ async function runRecommendationTests() {
 
   // Test 2: High UV Index & SPF Rule
   console.log('\n[Test 2] Testing High UV Index (>= 6) Rule...');
-  const uvWarning = recClassy.skincareNotes.warnings.find(w => w.includes('High UV Index'));
-  const amSpfStep = recClassy.skincareNotes.amSteps.find(s => s.stepCategory.includes('SPF'));
+  const uvWarning = recClassy.skincareNotes.warnings.find((w) => w.includes('High UV Index'));
+  const amSpfStep = recClassy.skincareNotes.amSteps.find((s) => s.stepCategory.includes('SPF'));
 
   console.log('UV Warning:', uvWarning);
   console.log('AM SPF Step:', amSpfStep?.productName);
@@ -48,7 +79,7 @@ async function runRecommendationTests() {
   }
 
   // Test 2b: Missing SPF triggers Gap-Fill
-  const closetNoSpf = closet.filter(i => (i.metadata as any)?.step_category !== 'spf');
+  const closetNoSpf = closet.filter((i) => (i.metadata as any)?.step_category !== 'spf');
   const recNoSpf = generateRecommendation({
     skin,
     skinTone,
@@ -56,7 +87,7 @@ async function runRecommendationTests() {
     vibe: 'classy',
     closet: closetNoSpf,
   });
-  const spfGap = recNoSpf.gapFillSuggestions.find(g => g.category.includes('SPF'));
+  const spfGap = recNoSpf.gapFillSuggestions.find((g) => g.category.includes('SPF'));
   console.log('Missing SPF gap fill:', spfGap?.reason);
   if (!spfGap || !spfGap.reason.includes('UV Index')) {
     throw new Error('Test 2b Failed: Missing SPF did not trigger high-urgency gap fill');
@@ -68,8 +99,8 @@ async function runRecommendationTests() {
   const recBold = generateRecommendation({ skin, skinTone, weather, vibe: 'bold', closet });
   const recNatural = generateRecommendation({ skin, skinTone, weather, vibe: 'natural', closet });
 
-  const boldLip = recBold.makeupSteps.find(s => s.category === 'lip');
-  const naturalLip = recNatural.makeupSteps.find(s => s.category === 'lip');
+  const boldLip = recBold.makeupSteps.find((s) => s.category === 'lip');
+  const naturalLip = recNatural.makeupSteps.find((s) => s.category === 'lip');
 
   console.log('Bold Lip Intensity:', boldLip?.intensity, 'Finish:', boldLip?.finish);
   console.log('Natural Lip Intensity:', naturalLip?.intensity, 'Finish:', naturalLip?.finish);
@@ -81,7 +112,7 @@ async function runRecommendationTests() {
 
   // Test 4: Gap-Fill Explanations
   console.log('\n[Test 4] Testing Gap Fill reason generation...');
-  console.log('Gap fill suggestions for Bold look:', recBold.gapFillSuggestions);
+  console.log('Gap fill suggestions for Bold look count:', recBold.gapFillSuggestions.length);
   if (recBold.gapFillSuggestions.length > 0) {
     const gap = recBold.gapFillSuggestions[0];
     if (!gap.reason || gap.reason.length < 10) {

@@ -123,12 +123,12 @@ export function generateRecommendation(input: {
 
   const spf = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'spf');
 
-  // Specific clinical alert banners
   if (hasAcne) {
     warnings.push(
       `Active Blemish & Acne Congestion Detected (${skin.concerns.acne.score}%): Incorporating 2% BHA Salicylic Acid and Niacinamide + Zinc to dissolve follicular plugs and reduce localized inflammation.`
     );
-  } else if (hasHighRedness) {
+  }
+  if (hasHighRedness) {
     warnings.push(
       `Elevated Skin Redness Detected (${skin.concerns.redness.score}%): Your lipid barrier shows micro-vascular reactivity. Pausing PM exfoliating acids/retinol and buffering with soothing Centella Asiatica & Ceramides.`
     );

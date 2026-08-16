@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { base64ToBuffer } from '@/lib/image-utils';
 import { analyzeParallelBeautyProfile } from '@/lib/youcam/parallel-analyzer';
-import { analyzeSkinTone, generateMockSkinTone } from '@/lib/youcam/skin-tone';
-import { fetchWeather, generateMockWeather, WeatherResult } from '@/lib/weather';
+import { analyzeSkinTone } from '@/lib/youcam/skin-tone';
+import { fetchWeather, WeatherResult } from '@/lib/weather';
 import { getClosetItems, saveLookSession } from '@/lib/supabase';
 import { generateRecommendation } from '@/lib/recommendation-engine';
-import { generateLLMRecommendation } from '@/lib/llm-engine';
-import { extractBufferTelemetry } from '@/lib/image-analysis';
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +16,6 @@ export async function POST(req: NextRequest) {
       lat,
       lon,
       city,
-      telemetry: clientTelemetry,
     } = body;
 
     if (!selfieBase64) {
@@ -30,33 +27,35 @@ export async function POST(req: NextRequest) {
 
     const { buffer: selfieBuffer, contentType } = base64ToBuffer(selfieBase64);
 
-    // Derive telemetry if not supplied by client
-    const telemetry = clientTelemetry || extractBufferTelemetry(selfieBuffer);
-
-    // 1. Resolve Weather
+    // 1. Resolve Weather from real Open-Meteo API
     let weather: WeatherResult;
-    if (clientWeather && clientWeather.tempC !== undefined) {
+    if (clientWeather && typeof clientWeather.tempC === 'number') {
       weather = clientWeather;
     } else if (typeof lat === 'number' && typeof lon === 'number') {
       try {
         weather = await fetchWeather(lat, lon, city);
-      } catch {
-        weather = generateMockWeather();
+      } catch (weatherErr: any) {
+        return NextResponse.json(
+          { error: `Weather service error: ${weatherErr.message}` },
+          { status: 502 }
+        );
       }
     } else {
-      weather = generateMockWeather();
+      // Default to standard atmospheric baseline if coordinates were denied
+      try {
+        weather = await fetchWeather(37.7749, -122.4194, 'San Francisco');
+      } catch (err: any) {
+        return NextResponse.json(
+          { error: `Could not retrieve weather data. Please provide location coordinates.` },
+          { status: 400 }
+        );
+      }
     }
 
-    // 2. Run Parallel Multi-AI Analyzer Pipeline (Skin + Fitzpatrick + Color Tones + Face Attributes)
+    // 2. Run Parallel Multi-AI Analyzer Pipeline (Skin + Fitzpatrick + Color Tones + Face Attributes) + Skin Tone + Closet
     const [beautyProfile, skinTone, closetItems] = await Promise.all([
-      analyzeParallelBeautyProfile(selfieBuffer, telemetry).catch((err) => {
-        console.warn('Parallel beauty analyzer warning:', err);
-        return analyzeParallelBeautyProfile(selfieBuffer, telemetry);
-      }),
-      analyzeSkinTone(selfieBuffer, contentType, telemetry).catch((err) => {
-        console.warn('Skin tone API error, using optical CV analysis:', err.message);
-        return generateMockSkinTone(selfieBuffer, telemetry);
-      }),
+      analyzeParallelBeautyProfile(selfieBuffer),
+      analyzeSkinTone(selfieBuffer, contentType),
       getClosetItems(),
     ]);
 

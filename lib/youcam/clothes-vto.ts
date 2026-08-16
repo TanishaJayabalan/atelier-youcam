@@ -31,32 +31,6 @@ export function normalizeGarmentCategory(category?: string): GarmentCategory {
 }
 
 /**
- * Generates mock try-on result utilizing the actual garment image chosen by the recommendation engine.
- */
-export function generateMockClothesResult(
-  garmentBufferOrUrl?: Buffer | string,
-  garmentName?: string,
-  category?: GarmentCategory
-): ClothesVTOResult {
-  let resultImageUrl = 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80';
-
-  if (typeof garmentBufferOrUrl === 'string' && (garmentBufferOrUrl.startsWith('http') || garmentBufferOrUrl.startsWith('data:'))) {
-    resultImageUrl = garmentBufferOrUrl;
-  }
-
-  return {
-    resultImageUrl,
-    garmentName: garmentName || 'Tailored Ensemble Piece',
-    garmentCategory: category || 'upper_body',
-    rawResponse: {
-      status: 'success',
-      mock: true,
-      message: 'Clothes VTO rendered selected wardrobe garment',
-    },
-  };
-}
-
-/**
  * Executes Generative Clothes Virtual Try-On using YouCam S2S API.
  */
 export async function applyOutfit(
@@ -81,7 +55,7 @@ export async function applyOutfit(
   try {
     // Step 1: Upload selfie image (person source)
     const personFileId = await uploadFile(
-      '/s2s/v1.0/file/skin-analysis',
+      '/s2s/v2.0/file',
       selfieBuffer,
       selfieContentType,
       'selfie_person.jpg'
@@ -97,7 +71,7 @@ export async function applyOutfit(
         }
         const arrayBuf = await fetchRes.arrayBuffer();
         garmentFileId = await uploadFile(
-          '/s2s/v1.0/file/skin-analysis',
+          '/s2s/v2.0/file',
           Buffer.from(arrayBuf),
           garmentContentType,
           'garment.jpg'
@@ -107,7 +81,7 @@ export async function applyOutfit(
       }
     } else {
       garmentFileId = await uploadFile(
-        '/s2s/v1.0/file/skin-analysis',
+        '/s2s/v2.0/file',
         garmentBufferOrUrl,
         garmentContentType,
         'garment.jpg'
@@ -124,7 +98,6 @@ export async function applyOutfit(
     // Step 4: Poll task result
     const rawResult: any = await pollTask('/s2s/v2.0/task/cloth-v4', taskId, {
       timeoutMs: 45000,
-      mockResultGenerator: () => generateMockClothesResult(garmentBufferOrUrl, garmentName, normalizedCategory),
     });
 
     const resultImageUrl =
@@ -133,7 +106,11 @@ export async function applyOutfit(
       rawResult?.file_url ||
       rawResult?.url ||
       rawResult?.results?.output_url ||
-      generateMockClothesResult(garmentBufferOrUrl, garmentName, normalizedCategory).resultImageUrl;
+      rawResult?.results?.files?.[0]?.url;
+
+    if (!resultImageUrl) {
+      throw new Error('YouCam clothes VTO returned no output image URL.');
+    }
 
     return {
       resultImageUrl,
@@ -141,8 +118,7 @@ export async function applyOutfit(
       garmentCategory: normalizedCategory,
       rawResponse: rawResult,
     };
-  } catch (err) {
-    console.warn('Clothes VTO error, using garment visual fallback:', err);
-    return generateMockClothesResult(garmentBufferOrUrl, garmentName, normalizedCategory);
+  } catch (err: any) {
+    throw new Error(`Clothes VTO failed: ${err.message}`);
   }
 }
