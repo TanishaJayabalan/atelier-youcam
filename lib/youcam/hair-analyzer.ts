@@ -27,8 +27,8 @@ export async function analyzeHairDiagnostics(
       })(),
       (async () => {
         const taskId = await runTask('/s2s/v2.0/task/hair-type-detection', {
-          src_file_id: fileId.startsWith('http') ? undefined : fileId,
-          src_file_url: fileId.startsWith('http') ? fileId : undefined,
+          src_file_ids: fileId.startsWith('http') ? undefined : [fileId, fileId, fileId],
+          src_file_urls: fileId.startsWith('http') ? [fileId, fileId, fileId] : undefined,
         });
         return pollTask<any>('/s2s/v2.0/task/hair-type-detection', taskId, {
           timeoutMs: 25000,
@@ -36,8 +36,8 @@ export async function analyzeHairDiagnostics(
       })(),
       (async () => {
         const taskId = await runTask('/s2s/v2.0/task/hair-frizziness-detection', {
-          src_file_id: fileId.startsWith('http') ? undefined : fileId,
-          src_file_url: fileId.startsWith('http') ? fileId : undefined,
+          src_file_ids: fileId.startsWith('http') ? undefined : [fileId, fileId, fileId],
+          src_file_urls: fileId.startsWith('http') ? [fileId, fileId, fileId] : undefined,
         });
         return pollTask<any>('/s2s/v2.0/task/hair-frizziness-detection', taskId, {
           timeoutMs: 25000,

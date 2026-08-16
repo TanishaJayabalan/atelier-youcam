@@ -99,12 +99,20 @@ const VIBE_MAKEUP_PROFILES: Record<
  */
 export function generateRecommendation(input: {
   skin: SkinAnalysisResult;
-  skinTone: SkinToneResult;
+  skinTone?: SkinToneResult;
   weather: WeatherResult;
   vibe: 'classy' | 'elegant' | 'bold' | 'natural';
   closet: ClosetItem[];
 }): Recommendation {
   const { skin, skinTone, weather, vibe, closet } = input;
+  const tone = skinTone || {
+    skinToneHex: '#DFAC82',
+    hexCode: '#DFAC82',
+    undertone: 'warm' as const,
+    seasonPalette: 'Autumn',
+    season: 'Autumn',
+    eyebrowColorHex: '#422B1E',
+  };
   const ownedCloset = closet.filter((item) => item.is_owned);
 
   const warnings: string[] = [];
@@ -115,22 +123,24 @@ export function generateRecommendation(input: {
   // =========================================================================
   const skincareItems = ownedCloset.filter((i) => i.category === 'skincare');
   
-  const hasAcne = (skin.concerns.acne?.score || 0) >= 28 || skin.concerns.acne?.severity === 'high' || skin.concerns.acne?.severity === 'moderate';
-  const hasHighRedness = (skin.concerns.redness?.score || 0) >= 32 || skin.concerns.redness?.severity !== 'low' || skin.skinType === 'sensitive';
-  const hasHighOiliness = (skin.concerns.oiliness?.score || 0) >= 40 || skin.skinType === 'oily';
-  const hasHighDryness = (skin.concerns.dryness?.score || 0) >= 40 || skin.skinType === 'dry';
-  const hasDarkCircles = (skin.concerns.dark_circles?.score || 0) >= 35 || skin.concerns.dark_circle?.severity === 'high';
+  const hasAcne = (skin.concerns?.acne?.score || 0) >= 28 || skin.concerns?.acne?.severity === 'high' || skin.concerns?.acne?.severity === 'moderate';
+  const hasHighRedness = (skin.concerns?.redness?.score || 0) >= 32 || (Boolean(skin.concerns?.redness?.severity) && skin.concerns?.redness?.severity !== 'low') || skin.skinType === 'sensitive';
+  const hasHighOiliness = (skin.concerns?.oiliness?.score || 0) >= 40 || skin.skinType === 'oily';
+  const hasHighDryness = (skin.concerns?.dryness?.score || 0) >= 40 || skin.skinType === 'dry';
+  const hasDarkCircles = (skin.concerns?.dark_circles?.score || skin.concerns?.dark_circle?.score || 0) >= 35 || skin.concerns?.dark_circles?.severity === 'high' || skin.concerns?.dark_circle?.severity === 'high';
 
   const spf = skincareItems.find((i) => (i.metadata as SkincareMetadata)?.step_category === 'spf');
 
   if (hasAcne) {
+    const scoreText = skin.concerns?.acne?.score ? ` (${skin.concerns.acne.score}%)` : '';
     warnings.push(
-      `Active Blemish & Acne Congestion Detected (${skin.concerns.acne.score}%): Incorporating 2% BHA Salicylic Acid and Niacinamide + Zinc to dissolve follicular plugs and reduce localized inflammation.`
+      `Active Blemish & Acne Congestion Detected${scoreText}: Incorporating 2% BHA Salicylic Acid and Niacinamide + Zinc to dissolve follicular plugs and reduce localized inflammation.`
     );
   }
   if (hasHighRedness) {
+    const scoreText = skin.concerns?.redness?.score ? ` (${skin.concerns.redness.score}%)` : '';
     warnings.push(
-      `Elevated Skin Redness Detected (${skin.concerns.redness.score}%): Your lipid barrier shows micro-vascular reactivity. Pausing PM exfoliating acids/retinol and buffering with soothing Centella Asiatica & Ceramides.`
+      `Elevated Skin Redness Detected${scoreText}: Your lipid barrier shows micro-vascular reactivity. Pausing PM exfoliating acids/retinol and buffering with soothing Centella Asiatica & Ceramides.`
     );
   }
 
@@ -320,7 +330,7 @@ export function generateRecommendation(input: {
   // 2. MAKEUP FORMULATION (OWNED CLOSET + UNDERTONE + VIBE)
   // =========================================================================
   const vibeConfig = VIBE_MAKEUP_PROFILES[vibe] || VIBE_MAKEUP_PROFILES.classy;
-  const currentSeason = (skinTone.season || skinTone.seasonPalette || 'Autumn') as 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+  const currentSeason = ((tone as any).season || tone.seasonPalette || 'Autumn') as 'Spring' | 'Summer' | 'Autumn' | 'Winter';
 
   // Dynamic Vibe & Seasonal Palette Matrix
   const SHADE_MATRIX: Record<
@@ -425,13 +435,13 @@ export function generateRecommendation(input: {
   const makeupSteps: MakeupStep[] = [];
 
   // Foundation (Formulated to user's exact detected skin tone)
-  const foundationHex = skinTone.skinToneHex || skinTone.hexCode || '#DFAC82';
+  const foundationHex = tone.skinToneHex || tone.hexCode || '#DFAC82';
   makeupSteps.push({
     category: 'foundation',
     colorHex: foundationHex,
     intensity: vibeConfig.foundationIntensity,
     finish: hasHighOiliness ? 'matte' : vibeConfig.preferredFinish,
-    productName: `Harmonized ${skinTone.undertone} Undertone Base (${vibe.toUpperCase()})`,
+    productName: `Harmonized ${tone.undertone} Undertone Base (${vibe.toUpperCase()})`,
   });
 
   // Blush
@@ -463,7 +473,7 @@ export function generateRecommendation(input: {
   // Eyebrow
   makeupSteps.push({
     category: 'eyebrow',
-    colorHex: skinTone.eyebrowColorHex || '#422B1E',
+    colorHex: tone.eyebrowColorHex || '#422B1E',
     intensity: vibeConfig.browIntensity,
     productName: 'Brow Wiz Precision Definer',
   });
@@ -549,7 +559,7 @@ export function generateRecommendation(input: {
       gapFills.push({
         category: 'Makeup (Lipstick)',
         suggestedProduct: 'Statement Crimson Velvet Matte Lipstick',
-        reason: `Your chosen vibe is "${vibe.toUpperCase()}" with ${skinTone.undertone} undertones. A high-pigment crimson lip elevates the contrast of your facial harmony.`,
+        reason: `Your chosen vibe is "${vibe.toUpperCase()}" with ${tone.undertone} undertones. A high-pigment crimson lip elevates the contrast of your facial harmony.`,
         urgency: 'recommended',
       });
     }
@@ -560,7 +570,7 @@ export function generateRecommendation(input: {
   // =========================================================================
   const explanation = [
     `✨ **Mirror Check Analysis for Today (${weather.city || 'Your Location'})**:`,
-    `- **Skin & Undertone**: Overall skin vitality is rated **${skin.overallScore}/100** with **${skinTone.undertone.toUpperCase()}** undertones (${skinTone.seasonPalette} season). ${hasHighRedness ? '⚠️ Mild skin redness/sensitivity was detected on your barrier.' : 'Skin barrier is in prime balance.'}`,
+    `- **Skin & Undertone**: Overall skin vitality is rated **${skin.overallScore}/100** with **${tone.undertone.toUpperCase()}** undertones (${tone.seasonPalette} season). ${hasHighRedness ? '⚠️ Mild skin redness/sensitivity was detected on your barrier.' : 'Skin barrier is in prime balance.'}`,
     `- **Weather Synergy**: Currently **${weather.tempC}°C / ${weather.tempF}°F** with **${weather.condition}** and a **UV Index of ${weather.uvIndex}** (${weather.uvIndex >= 6 ? 'High UV alert' : 'Moderate UV'}).`,
     `- **Skincare Strategy**: ${hasHighRedness ? 'Swapped active Retinol out of tonight\'s routine in favor of soothing Centella & Ceramide barrier recovery.' : 'Standard daytime hydration and protection routine applied.'}`,
     `- **Look & Styling**: Curated a **${vibe.toUpperCase()}** profile with ${vibeConfig.styleDesc}. ${stylingRationale}`,

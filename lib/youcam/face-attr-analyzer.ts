@@ -17,6 +17,7 @@ export async function analyzeFaceAttributes(
     const taskId = await runTask('/s2s/v2.0/task/face-attr-analysis', {
       src_file_id: fileId.startsWith('http') ? undefined : fileId,
       src_file_url: fileId.startsWith('http') ? fileId : undefined,
+      face_angle_strictness_level: 'flexible',
       features: [
         'faceShape',
         'age',

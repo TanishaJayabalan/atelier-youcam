@@ -239,8 +239,24 @@ export async function pollTask<T = any>(
       }
 
       if (status === 'error' || status === 'failed') {
-        const errCode = result?.error || result?.error?.code || result?.error_code || data?.error?.code;
-        const errMsg = result?.error?.message || result?.error_message || data?.error?.message;
+        console.error('[YouCam Task Error Raw Response]:', JSON.stringify(data));
+        const rawErr = result?.error ?? data?.error;
+        const errCode =
+          (typeof rawErr === 'string' ? rawErr : rawErr?.code) ||
+          result?.error_code ||
+          data?.error_code ||
+          result?.code ||
+          data?.code;
+        const errMsg =
+          (typeof rawErr === 'object' ? rawErr?.message : undefined) ||
+          result?.error_message ||
+          data?.error_message ||
+          result?.msg ||
+          data?.msg ||
+          result?.message ||
+          data?.message ||
+          (typeof rawErr === 'string' ? rawErr : undefined);
+
         const formatted = formatYouCamError(errCode, errMsg);
         throw new Error(formatted.userFriendlyMessage);
       }

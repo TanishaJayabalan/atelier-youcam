@@ -10,24 +10,24 @@ interface SelfieCaptureProps {
 
 const SAMPLE_SELFIES = [
   {
-    id: 'sample_acne',
-    label: '🎯 Blemishes & Texture Portrait',
-    url: 'https://images.unsplash.com/photo-1597223557154-721c1cecc4b0?auto=format&fit=crop&w=800&q=80',
-  },
-  {
     id: 'sample_1',
     label: 'Studio Portrait (Warm Golden)',
-    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&h=600&q=80',
   },
   {
     id: 'sample_2',
     label: 'Natural Daylight (Neutral)',
-    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&h=600&q=80',
   },
   {
     id: 'sample_3',
     label: 'Deep Melanin (Rich Radiance)',
-    url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=800&q=80',
+    url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=600&h=600&q=80',
+  },
+  {
+    id: 'sample_4',
+    label: 'Clean Headshot (Classic Focus)',
+    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&h=600&q=80',
   },
 ];
 
@@ -143,16 +143,30 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
+    const vWidth = video.videoWidth || 1280;
+    const vHeight = video.videoHeight || 720;
+
+    // Crop to 3:4 portrait matching the visual frame shown in the UI
+    const targetAspect = 3 / 4;
+    let sWidth = vHeight * targetAspect;
+    let sHeight = vHeight;
+
+    if (sWidth > vWidth) {
+      sWidth = vWidth;
+      sHeight = vWidth / targetAspect;
+    }
+
+    const sx = Math.max(0, (vWidth - sWidth) / 2);
+    const sy = Math.max(0, (vHeight - sHeight) / 2);
+
     const canvas = document.createElement('canvas');
-    const width = video.videoWidth || 1280;
-    const height = video.videoHeight || 1280;
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = Math.round(sWidth);
+    canvas.height = Math.round(sHeight);
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.translate(width, 0);
+      ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, width, height);
+      ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
       const base64 = canvas.toDataURL('image/jpeg', 0.95);
 
       setFlash(true);
@@ -293,7 +307,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
         {flash && <div className="absolute inset-0 bg-white z-20 pointer-events-none transition-opacity" />}
 
         {selectedSelfie && (capturedFromCamera || sourceType !== 'camera') ? (
-          <div className="relative rounded-2xl overflow-hidden bg-stone-950 border border-stone-200 aspect-[4/3] max-h-80 flex items-center justify-center group">
+          <div className="relative rounded-2xl overflow-hidden bg-stone-950 border border-stone-200 aspect-[3/4] max-h-96 mx-auto flex items-center justify-center group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selectedSelfie}
@@ -316,7 +330,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
             </div>
           </div>
         ) : sourceType === 'camera' ? (
-          <div className="relative rounded-2xl overflow-hidden bg-stone-950 aspect-[4/3] max-h-80 flex flex-col items-center justify-center border border-stone-200">
+          <div className="relative rounded-2xl overflow-hidden bg-stone-950 aspect-[3/4] max-h-96 mx-auto flex flex-col items-center justify-center border border-stone-200">
             {cameraError ? (
               <div className="p-6 text-center text-stone-300">
                 <VideoOff className="w-8 h-8 text-amber-500 mx-auto mb-2 opacity-80" />
@@ -352,8 +366,11 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
                 />
                 
                 {/* Face Guide Oval */}
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-48 h-60 rounded-[50%] border-2 border-dashed border-white/40 shadow-xs" />
+                <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                  <div className="w-52 h-68 rounded-[50%] border-2 border-dashed border-white/60 shadow-xs" />
+                  <span className="text-[11px] font-medium text-white/90 bg-stone-900/60 px-3 py-1 rounded-full backdrop-blur-xs mt-3">
+                    Position face inside oval &amp; look straight ahead
+                  </span>
                 </div>
 
                 {/* Shutter Capture Button */}

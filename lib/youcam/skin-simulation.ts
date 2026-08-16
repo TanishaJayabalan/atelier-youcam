@@ -118,7 +118,7 @@ export async function simulateSkinOutcome(
   try {
     let fileId: string;
     if (Buffer.isBuffer(imageInput)) {
-      fileId = await uploadFile('/s2s/v1.0/file/skin-analysis', imageInput, 'image/jpeg', 'simulation_src.jpg');
+      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'simulation_src.jpg');
     } else {
       fileId = imageInput;
     }
@@ -126,8 +126,7 @@ export async function simulateSkinOutcome(
     const taskId = await runTask('/s2s/v2.0/task/skin-simulation', {
       src_file_id: fileId.startsWith('http') ? undefined : fileId,
       src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      version: '1.0',
-      dst_actions: params,
+      ...params,
     });
 
     const result = await pollTask<any>('/s2s/v2.0/task/skin-simulation', taskId, {

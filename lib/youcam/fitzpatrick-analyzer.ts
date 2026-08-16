@@ -66,10 +66,10 @@ export async function analyzeFitzpatrickScale(
       timeoutMs: 25000,
     });
 
-    const rawType = result?.results?.fitzpatrick_scale || result?.fitzpatrick_scale || result?.type;
+    const rawType = result?.fitzpatrick_scale || result?.results?.fitzpatrick_scale;
     let resolvedType: FitzpatrickType = 'III';
     if (rawType) {
-      const match = String(rawType).toUpperCase();
+      const match = String(rawType).toUpperCase().trim();
       if (match.includes('VI') || match === 'TYPE 6') resolvedType = 'VI';
       else if (match.includes('V') || match === 'TYPE 5') resolvedType = 'V';
       else if (match.includes('IV') || match === 'TYPE 4') resolvedType = 'IV';

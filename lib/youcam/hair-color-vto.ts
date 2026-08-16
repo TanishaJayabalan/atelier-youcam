@@ -83,7 +83,7 @@ export async function applyHairColorVTO(
     const taskId = await runTask('/s2s/v2.0/task/hair-color', {
       src_file_id: fileId.startsWith('http') ? undefined : fileId,
       src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      pattern: { name: '1color1' },
+      pattern: { name: 'full' },
       palettes: [
         {
           color: chosenShade.hex,
