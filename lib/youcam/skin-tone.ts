@@ -145,11 +145,29 @@ export function getHarmonizedPalette(season: SeasonalPalette, undertone: Underto
 }
 
 export function normalizeSkinToneResponse(raw: any): SkinToneResult {
-  const colorObj = raw?.color || raw?.results?.color || raw?.result?.color || {};
-  const skinHex = colorObj.skin_color || colorObj.hex || raw?.skin_color || '#DFAC82';
+  const colorObj =
+    raw?.data?.results?.color ||
+    raw?.results?.color ||
+    raw?.data?.color ||
+    raw?.color ||
+    raw?.result?.color ||
+    {};
+
+  const skinHex =
+    colorObj.skin_color ||
+    colorObj.hex ||
+    raw?.data?.results?.skin_color ||
+    raw?.skin_color ||
+    '#DFAC82';
   const rgb = hexToRgb(skinHex);
 
-  const rawUndertone = (colorObj.undertone || raw?.undertone || '').toLowerCase();
+  const rawUndertone = (
+    colorObj.undertone ||
+    raw?.data?.results?.undertone ||
+    raw?.undertone ||
+    ''
+  ).toLowerCase();
+
   let undertone: Undertone = 'neutral';
   if (rawUndertone.includes('warm')) undertone = 'warm';
   else if (rawUndertone.includes('cool')) undertone = 'cool';

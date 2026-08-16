@@ -166,6 +166,46 @@ export default function ExplanationCard({
           </div>
         </div>
 
+        {/* Clinical Diagnostics & Concern Scores Breakdown Box */}
+        {skin.concerns && Object.keys(skin.concerns).length > 0 && (
+          <div className="my-4 p-3.5 bg-stone-50/70 rounded-xl border border-stone-200/80">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700">
+                Clinical Diagnostics &amp; Concern Scores Breakdown
+              </span>
+              <span className="text-[10px] text-stone-500 font-mono">
+                {Object.keys(skin.concerns).length} Clinical Biomarkers
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+              {Object.values(skin.concerns).map((c) => (
+                <div
+                  key={c.key}
+                  className="bg-white p-2 rounded-lg border border-stone-200/70 shadow-xs flex flex-col justify-between"
+                >
+                  <span className="text-[10px] font-medium text-stone-600 line-clamp-1" title={c.displayName}>
+                    {c.displayName}
+                  </span>
+                  <div className="flex items-baseline justify-between mt-1">
+                    <span className="text-sm font-bold text-stone-900">{c.score}%</span>
+                    <span
+                      className={`text-[9px] font-semibold uppercase px-1 py-0.5 rounded ${
+                        c.severity === 'high'
+                          ? 'bg-rose-100 text-rose-700'
+                          : c.severity === 'moderate'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {c.severity}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Feature 1.3: Facial Architecture & Personalized Placement Guidance */}
         <div className="mt-5 pt-4 border-t border-stone-100">
           <div className="flex items-center gap-2 mb-3">

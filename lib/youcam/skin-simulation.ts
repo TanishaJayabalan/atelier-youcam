@@ -33,8 +33,9 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
   const projected: SkinSimulationResponse['projectedConcerns'] = [];
 
   const mapScore = (score?: number) => {
-    if (typeof score !== 'number') return 0.5;
-    return Math.max(0.2, Math.min(0.95, (100 - score) / 90));
+    if (typeof score !== 'number') return 0.45;
+    // Higher concern score (e.g. 50-80) maps to higher therapeutic simulation intensity (0.4-0.85)
+    return Math.max(0.25, Math.min(0.85, Number((score / 90).toFixed(2))));
   };
 
   if (skin?.concerns?.redness) {
@@ -109,8 +110,8 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
-  // Radiance boost
-  params.radiance = 0.75;
+  // Balanced healthy radiance (subtle glow, not washed out)
+  params.radiance = 0.35;
   projected.push({
     concern: 'Overall Luminous Epidermal Radiance',
     baselineScore: skin?.overallScore || 78,

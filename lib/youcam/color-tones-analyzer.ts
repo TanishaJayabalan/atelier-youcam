@@ -51,11 +51,12 @@ export async function analyzeColorTones(
       face_angle_strictness_level: 'medium',
     });
 
-    const result = await pollTask<any>('/s2s/v2.0/task/skin-tone-analysis', taskId, {
-      timeoutMs: 25000,
-    });
-
-    const colorObj = result?.results?.color || result?.color || {};
+    const colorObj =
+      result?.data?.results?.color ||
+      result?.results?.color ||
+      result?.data?.color ||
+      result?.color ||
+      {};
     const skinColor = colorObj.skin_color || '#DFAC82';
     const eyeColor = colorObj.eye_color || '#3A2E2B';
     const eyeColorName = colorObj.eye_color_name || 'Brown';
