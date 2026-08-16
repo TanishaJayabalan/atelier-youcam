@@ -12,7 +12,7 @@ async function runClothesVTOTests() {
   if (
     normalizeGarmentCategory('Silk Blouse') !== 'upper_body' ||
     normalizeGarmentCategory('Pleated Trousers') !== 'lower_body' ||
-    normalizeGarmentCategory('Evening Maxi Dress') !== 'dress' ||
+    normalizeGarmentCategory('Evening Maxi Dress') !== 'full_body' ||
     normalizeGarmentCategory('Tailored Blazer') !== 'outerwear'
   ) {
     throw new Error('Test 1 Failed: Category normalization mismatch');

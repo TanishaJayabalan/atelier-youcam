@@ -1,6 +1,12 @@
 import { uploadFile, runTask, pollTask } from './client';
 
-export type GarmentCategory = 'upper_body' | 'lower_body' | 'dress' | 'outerwear' | 'overall';
+export type GarmentCategory =
+  | 'full_body'
+  | 'upper_body'
+  | 'lower_body'
+  | 'outerwear'
+  | 'shoes'
+  | 'auto';
 
 export interface ClothesVTOResult {
   resultImageUrl: string;
@@ -10,24 +16,62 @@ export interface ClothesVTOResult {
 }
 
 /**
- * Normalizes internal category strings to YouCam AI Clothes category types.
+ * Normalizes internal category strings to YouCam AI Clothes v4.0 category types:
+ * Allowed values by YouCam S2S cloth-v4: 'full_body' | 'upper_body' | 'lower_body' | 'outerwear' | 'shoes' | 'auto'
  */
 export function normalizeGarmentCategory(category?: string): GarmentCategory {
-  if (!category) return 'overall';
+  if (!category) return 'auto';
   const cat = category.toLowerCase();
-  if (cat.includes('top') || cat.includes('shirt') || cat.includes('blouse') || cat.includes('sweater')) {
+  if (
+    cat.includes('dress') ||
+    cat.includes('gown') ||
+    cat.includes('suit') ||
+    cat.includes('jumpsuit') ||
+    cat.includes('overall') ||
+    cat.includes('full')
+  ) {
+    return 'full_body';
+  }
+  if (
+    cat.includes('top') ||
+    cat.includes('shirt') ||
+    cat.includes('blouse') ||
+    cat.includes('sweater') ||
+    cat.includes('tee') ||
+    cat.includes('tank')
+  ) {
     return 'upper_body';
   }
-  if (cat.includes('bottom') || cat.includes('pant') || cat.includes('skirt') || cat.includes('jean') || cat.includes('trouser')) {
+  if (
+    cat.includes('bottom') ||
+    cat.includes('pant') ||
+    cat.includes('skirt') ||
+    cat.includes('jean') ||
+    cat.includes('trouser') ||
+    cat.includes('short')
+  ) {
     return 'lower_body';
   }
-  if (cat.includes('dress') || cat.includes('gown')) {
-    return 'dress';
-  }
-  if (cat.includes('outer') || cat.includes('jacket') || cat.includes('coat') || cat.includes('blazer')) {
+  if (
+    cat.includes('outer') ||
+    cat.includes('jacket') ||
+    cat.includes('coat') ||
+    cat.includes('blazer') ||
+    cat.includes('vest') ||
+    cat.includes('cardigan')
+  ) {
     return 'outerwear';
   }
-  return 'overall';
+  if (
+    cat.includes('shoe') ||
+    cat.includes('boot') ||
+    cat.includes('sneaker') ||
+    cat.includes('heel') ||
+    cat.includes('sandal')
+  ) {
+    return 'shoes';
+  }
+  return 'auto';
 }
 
 /**
@@ -62,20 +106,26 @@ export async function applyOutfit(
     );
 
     // Step 2: Upload or resolve garment image
-    let garmentFileId: string;
+    let garmentFileId: string | null = null;
+    let directRefUrl: string | null = null;
+
     if (typeof garmentBufferOrUrl === 'string') {
       if (garmentBufferOrUrl.startsWith('http://') || garmentBufferOrUrl.startsWith('https://')) {
-        const fetchRes = await fetch(garmentBufferOrUrl);
-        if (!fetchRes.ok) {
-          throw new Error(`Failed to fetch garment image from URL: ${garmentBufferOrUrl}`);
+        directRefUrl = garmentBufferOrUrl;
+        try {
+          const fetchRes = await fetch(garmentBufferOrUrl);
+          if (fetchRes.ok) {
+            const arrayBuf = await fetchRes.arrayBuffer();
+            garmentFileId = await uploadFile(
+              '/s2s/v2.0/file',
+              Buffer.from(arrayBuf),
+              garmentContentType,
+              'garment.jpg'
+            );
+          }
+        } catch (fetchErr) {
+          console.warn('Could not re-upload garment URL, falling back to direct URL:', fetchErr);
         }
-        const arrayBuf = await fetchRes.arrayBuffer();
-        garmentFileId = await uploadFile(
-          '/s2s/v2.0/file',
-          Buffer.from(arrayBuf),
-          garmentContentType,
-          'garment.jpg'
-        );
       } else {
         garmentFileId = garmentBufferOrUrl;
       }
@@ -88,12 +138,21 @@ export async function applyOutfit(
       );
     }
 
-    // Step 3: Run AI Clothes VTO Task
-    const taskId = await runTask('/s2s/v2.0/task/cloth-v4', {
+    // Step 3: Run AI Clothes VTO Task with valid cloth-v4 payload
+    const taskPayload: Record<string, any> = {
       src_file_id: personFileId,
-      ref_file_id: garmentFileId,
       garment_category: normalizedCategory,
-    });
+    };
+
+    if (garmentFileId) {
+      taskPayload.ref_file_id = garmentFileId;
+    } else if (directRefUrl) {
+      taskPayload.ref_file_url = directRefUrl;
+    } else {
+      throw new Error('No valid garment reference image or file ID available.');
+    }
+
+    const taskId = await runTask('/s2s/v2.0/task/cloth-v4', taskPayload);
 
     // Step 4: Poll task result
     const rawResult: any = await pollTask('/s2s/v2.0/task/cloth-v4', taskId, {
@@ -122,3 +181,4 @@ export async function applyOutfit(
     throw new Error(`Clothes VTO failed: ${err.message}`);
   }
 }
+
