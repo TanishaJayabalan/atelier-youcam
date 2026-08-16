@@ -1,3 +1,5 @@
+import AdmZip from 'adm-zip';
+import sharp from 'sharp';
 import { uploadFile, runTask, pollTask } from './client';
 
 export type SkinType = 'oily' | 'dry' | 'combination' | 'sensitive' | 'normal';
@@ -72,15 +74,18 @@ export const ALL_CONCERN_KEYS: ConcernKey[] = [
 const DISPLAY_NAMES: Record<string, string> = {
   spots: 'Hyperpigmentation & Spots',
   wrinkles: 'Fine Lines & Wrinkles',
+  wrinkle: 'Fine Lines & Wrinkles',
   texture: 'Skin Smoothness & Texture',
   dark_circles: 'Periorbital Dark Circles',
   dark_circle: 'Periorbital Dark Circles',
+  dark_circle_v2: 'Periorbital Dark Circles',
   redness: 'Erythema & Active Redness',
   oiliness: 'Sebum & T-Zone Oiliness',
   moisture: 'Hydration Level',
   pores: 'Pore Enlargement',
   pore: 'Pore Enlargement',
   eye_bags: 'Under-Eye Puffiness',
+  eye_bag: 'Under-Eye Puffiness',
   radiance: 'Skin Glow & Radiance',
   firmness: 'Skin Elasticity & Firmness',
   droopy_upper_eyelid: 'Upper Eyelid Sagging',
@@ -88,6 +93,7 @@ const DISPLAY_NAMES: Record<string, string> = {
   droopy_eyelids: 'Eyelid Sagging',
   acne: 'Active Blemishes & Acne',
   age_spots: 'Age Spots & Sun Damage',
+  age_spot: 'Age Spots & Sun Damage',
   dryness: 'Surface Dehydration',
   uniformness: 'Tone Uniformity',
 };
@@ -148,12 +154,23 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
     raw?.result?.concerns ||
     raw?.data?.results?.concerns ||
     raw?.data?.concerns ||
-    (!Array.isArray(raw?.output) && typeof raw?.output === 'object' ? raw.output : null);
+    (!Array.isArray(raw?.output) && typeof raw?.output === 'object' ? raw.output : null) ||
+    raw;
 
   if (rawObj && typeof rawObj === 'object') {
     for (const [key, val] of Object.entries(rawObj)) {
-      if (!key || key === 'all' || key === 'skin_age') continue;
+      if (!key || key === 'all' || key === 'skin_age' || key === 'resize_image' || key === 'url' || key === 'rawResponse') continue;
       const cleanKey = key.toLowerCase().replace(/^hd_/, '');
+
+      if (cleanKey === 'skin_type') {
+        if (typeof val === 'string') {
+          detectedSkinType = val;
+        } else if (val && typeof val === 'object') {
+          detectedSkinType = (val as any).whole?.skin_type || (val as any).skin_type;
+        }
+        continue;
+      }
+
       if (typedConcerns[cleanKey]) continue;
 
       let rawScore: number | undefined;
@@ -165,7 +182,7 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
         if (typeof (val as any).ui_score === 'number' || typeof (val as any).raw_score === 'number' || typeof (val as any).score === 'number') {
           rawScore = (val as any).ui_score ?? (val as any).raw_score ?? (val as any).score ?? (val as any).value;
         } else {
-          // Check nested subregions like { whole: { ui_score: 75 } } or { forehead: { ui_score: 80 } }
+          // Check nested subregions
           const subScores: number[] = [];
           for (const subVal of Object.values(val as Record<string, any>)) {
             if (typeof subVal === 'number') subScores.push(subVal);
@@ -200,7 +217,7 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
 
   const topConcerns = Object.values(typedConcerns)
     .filter((c) =>
-      ['redness', 'pores', 'pore', 'dark_circles', 'dark_circle', 'dark_circle_v2', 'oiliness', 'texture', 'wrinkles', 'acne', 'moisture', 'radiance'].includes(c.key)
+      ['redness', 'pores', 'pore', 'dark_circles', 'dark_circle', 'dark_circle_v2', 'oiliness', 'texture', 'wrinkles', 'wrinkle', 'acne', 'moisture', 'radiance'].includes(c.key)
     )
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
@@ -229,20 +246,19 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
 
   // Determine overall score: prioritize YouCam explicit overall / all score, then biomarker mean
   const explicitOverall =
+    raw?.all?.score ??
     raw?.data?.results?.score_info?.all?.ui_score ??
     raw?.data?.results?.score_info?.all?.raw_score ??
+    raw?.data?.results?.score_info?.all?.score ??
     raw?.data?.results?.score_info?.all ??
     raw?.data?.results?.all ??
     raw?.results?.all ??
-    raw?.all ??
     raw?.overall_score ??
-    raw?.overallScore ??
-    raw?.data?.results?.overall_score ??
-    raw?.result?.overall_score;
+    raw?.overallScore;
 
   const overallScore = explicitOverall !== undefined
     ? Math.max(1, Math.min(100, Math.round(Number(explicitOverall))))
-    : (avgConcernScore !== undefined ? avgConcernScore : 78);
+    : (avgConcernScore !== undefined ? Math.max(25, Math.min(98, avgConcernScore)) : 81);
 
   const detectedSkinAge =
     raw?.skin_age ??
@@ -266,9 +282,28 @@ export async function analyzeSkin(
   contentType: string = 'image/jpeg'
 ): Promise<SkinAnalysisResult> {
   try {
+    // 1. Auto-crop portrait to tight 70% center face & scale to crisp 768x768 to satisfy YouCam bounds
+    let processedBuffer = selfieBuffer;
+    try {
+      const meta = await sharp(selfieBuffer).metadata();
+      const w = meta.width || 600;
+      const h = meta.height || 600;
+      const cropW = Math.round(w * 0.70);
+      const cropH = Math.round(h * 0.70);
+      const left = Math.max(0, Math.min(w - cropW, Math.round((w - cropW) / 2)));
+      const top = Math.max(0, Math.min(h - cropH, Math.round((h - cropH) / 3.2)));
+      processedBuffer = await sharp(selfieBuffer)
+        .extract({ left, top, width: cropW, height: cropH })
+        .resize(768, 768, { fit: 'cover' })
+        .jpeg({ quality: 95 })
+        .toBuffer();
+    } catch {
+      processedBuffer = selfieBuffer;
+    }
+
     const fileId = await uploadFile(
       '/s2s/v2.0/file',
-      selfieBuffer,
+      processedBuffer,
       contentType,
       'selfie_skin_analysis.jpg'
     );
@@ -294,12 +329,35 @@ export async function analyzeSkin(
       ],
     });
 
-    const rawResult = await pollTask('/s2s/v2.0/task/skin-analysis', taskId, {
+    const rawResult = await pollTask<any>('/s2s/v2.0/task/skin-analysis', taskId, {
       timeoutMs: 35000,
     });
+
+    // If YouCam returned a zip package URL, fetch and extract score_info.json
+    const zipUrl = rawResult?.url || rawResult?.results?.url || rawResult?.file_url;
+    if (zipUrl && typeof zipUrl === 'string') {
+      try {
+        const zipRes = await fetch(zipUrl);
+        if (zipRes.ok) {
+          const zipBuf = Buffer.from(await zipRes.arrayBuffer());
+          const zip = new AdmZip(zipBuf);
+          const entries = zip.getEntries();
+          for (const entry of entries) {
+            if (entry.entryName.includes('score_info.json') || entry.entryName.endsWith('.json')) {
+              const scoreJsonText = entry.getData().toString('utf8');
+              const scoreObj = JSON.parse(scoreJsonText);
+              return normalizeSkinAnalysisResponse(scoreObj);
+            }
+          }
+        }
+      } catch (zipErr) {
+        console.warn('[Zip Unpack Warning]: Could not extract score_info.json from zip:', zipErr);
+      }
+    }
 
     return normalizeSkinAnalysisResponse(rawResult);
   } catch (err: any) {
     throw new Error(`Skin analysis failed: ${err.message}`);
   }
 }
+

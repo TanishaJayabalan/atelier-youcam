@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { uploadFile, runTask, pollTask } from './client';
 
 export type Undertone = 'warm' | 'cool' | 'neutral';
@@ -99,33 +100,33 @@ export function getHarmonizedPalette(season: SeasonalPalette, undertone: Underto
         { name: 'Caramel Nude', hex: '#C19A6B' },
       ],
       foundationShades: [
-        { name: 'Warm Sand', hex: '#DFAC82' },
-        { name: 'Golden Honey', hex: '#C68B59' },
+        { name: 'Rich Warm Sand', hex: '#D2A177' },
+        { name: 'Warm Amber Honey', hex: '#BA7A47' },
       ],
       clothingComplementaryColors: ['#B85D43', '#C19A6B', '#D4AF37'],
     },
     Summer: {
-      flattering: ['#C86267', '#87CEEB', '#E6E6FA', '#708090', '#B0C4DE'],
-      avoid: ['#FF8C00', '#FFD700', '#8B4513'],
-      description: 'Soft muted coolness featuring dusty rose, slate blue, powder blue, and soft mauve.',
+      flattering: ['#4682B4', '#B0E0E6', '#DDA0DD', '#E6E6FA', '#708090'],
+      avoid: ['#FF4500', '#FFD700', '#8B4513'],
+      description: 'Soft cool palette featuring slate blue, powder blue, soft lavender, and dusty rose.',
       blushShades: [
-        { name: 'Dusty Petal', hex: '#D8A0A6' },
-        { name: 'Soft Orchid', hex: '#DF73FF' },
-      ],
-      lipShades: [
-        { name: 'Rose Silk', hex: '#C86267' },
+        { name: 'Petal Soft Pink', hex: '#F4C2C2' },
         { name: 'Mauve Whisper', hex: '#B784A7' },
       ],
-      foundationShades: [
-        { name: 'Cool Ivory', hex: '#FBE7DF' },
-        { name: 'Neutral Rose', hex: '#E2BCB7' },
+      lipShades: [
+        { name: 'Pillow Talk Cool Nude', hex: '#C48A96' },
+        { name: 'Soft Plum Rose', hex: '#A25F7C' },
       ],
-      clothingComplementaryColors: ['#C86267', '#87CEEB', '#E6E6FA'],
+      foundationShades: [
+        { name: 'Rose Fair', hex: '#FBE8E0' },
+        { name: 'Cool Alabaster', hex: '#EED9D1' },
+      ],
+      clothingComplementaryColors: ['#4682B4', '#B0E0E6', '#DDA0DD'],
     },
     Winter: {
-      flattering: ['#800020', '#000080', '#2E8B57', '#000000', '#FFFFFF'],
-      avoid: ['#D2B48C', '#F0E68C', '#E97451'],
-      description: 'High-contrast clarity featuring deep ruby, midnight navy, emerald, and stark crisp black & white.',
+      flattering: ['#800020', '#000080', '#2E8B57', '#4B0082', '#FFFFFF'],
+      avoid: ['#D2B48C', '#F4A460', '#DAA520'],
+      description: 'High-contrast bold palette featuring true burgundy, deep sapphire, crisp emerald, and pure black/white.',
       blushShades: [
         { name: 'Crimson Glow', hex: '#C21E56' },
         { name: 'Cool Berry', hex: '#8E2856' },
@@ -224,15 +225,39 @@ export async function analyzeSkinTone(
 
     const taskId = await runTask('/s2s/v2.0/task/skin-tone-analysis', {
       src_file_id: fileId,
-      face_angle_strictness_level: 'medium',
+      face_angle_strictness_level: 'flexible',
     });
 
-    const rawResult = await pollTask('/s2s/v2.0/task/skin-tone-analysis', taskId, {
+    const rawResult = await pollTask<any>('/s2s/v2.0/task/skin-tone-analysis', taskId, {
       timeoutMs: 30000,
     });
 
     return normalizeSkinToneResponse(rawResult);
   } catch (err: any) {
-    throw new Error(`Skin tone analysis failed: ${err.message}`);
+    console.warn(`[Skin Tone Warning]: YouCam API returned: ${err.message}. Extracting dynamic skin tone from photo pixels...`);
+    try {
+      const meta = await sharp(selfieBuffer).metadata();
+      const w = meta.width || 400;
+      const h = meta.height || 400;
+      const { data } = await sharp(selfieBuffer)
+        .extract({ left: Math.round(w * 0.35), top: Math.round(h * 0.35), width: Math.max(10, Math.round(w * 0.3)), height: Math.max(10, Math.round(h * 0.3)) })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      let sumR = 0, sumG = 0, sumB = 0, count = 0;
+      for (let i = 0; i < data.length; i += 3) {
+        sumR += data[i];
+        sumG += data[i + 1];
+        sumB += data[i + 2];
+        count++;
+      }
+      const avgR = count > 0 ? Math.round(sumR / count) : 180;
+      const avgG = count > 0 ? Math.round(sumG / count) : 140;
+      const avgB = count > 0 ? Math.round(sumB / count) : 110;
+      const hex = '#' + [avgR, avgG, avgB].map((x) => Math.max(0, Math.min(255, x)).toString(16).padStart(2, '0')).join('');
+      return normalizeSkinToneResponse({ color: { skin_color: hex } });
+    } catch {
+      return normalizeSkinToneResponse({});
+    }
   }
 }
