@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing image input for hair style VTO' }, { status: 400 });
     }
 
-    const result = await applyHairStyleVTO(srcImage, templateId || 'style_wavy_lob');
+    const result = await applyHairStyleVTO(srcImage, templateId || 'female_blunt_bob');
     return NextResponse.json({ success: true, ...result });
   } catch (err: any) {
     console.error('API Error in hair-style-vto:', err);

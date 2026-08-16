@@ -1,4 +1,4 @@
-import { uploadFile, runTask, pollTask } from './client';
+import { runTask, pollTask, resolveImageInput } from './client';
 
 export interface HairStyleTemplate {
   id: string;
@@ -60,26 +60,20 @@ export const HAIRSTYLE_TEMPLATES: HairStyleTemplate[] = [
 
 export async function applyHairStyleVTO(
   imageInput: Buffer | string,
-  templateId: string = 'style_wavy_lob'
+  templateId: string = 'female_blunt_bob'
 ): Promise<{ imageUrl: string; template: HairStyleTemplate }> {
   const chosenTemplate = HAIRSTYLE_TEMPLATES.find((t) => t.id === templateId) || HAIRSTYLE_TEMPLATES[0];
 
   try {
-    let fileId: string;
-    if (Buffer.isBuffer(imageInput)) {
-      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'hairstyle_src.jpg');
-    } else {
-      fileId = imageInput;
-    }
+    const imagePayload = await resolveImageInput(imageInput, 'hairstyle_src.jpg');
 
     const taskId = await runTask('/s2s/v2.1/task/hair-transfer', {
-      src_file_id: fileId.startsWith('http') ? undefined : fileId,
-      src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      template_id: templateId,
+      ...imagePayload,
+      template_id: chosenTemplate.id,
     });
 
     const result = await pollTask<any>('/s2s/v2.1/task/hair-transfer', taskId, {
-      timeoutMs: 30000,
+      timeoutMs: 35000,
     });
 
     const outputUrl =

@@ -274,3 +274,34 @@ export async function pollTask<T = any>(
 
   throw new Error(`Task timed out after ${timeoutMs / 1000}s while waiting for YouCam AI.`);
 }
+
+/**
+ * Universal helper that safely resolves any image input (Buffer, base64 data URL, HTTP URL, or YouCam fileId)
+ * into a valid { src_file_id, src_file_url } payload object for YouCam S2S task endpoints.
+ */
+export async function resolveImageInput(
+  imageInput: Buffer | string,
+  filename = 'image.jpg',
+  endpoint = '/s2s/v2.0/file'
+): Promise<{ src_file_id?: string; src_file_url?: string }> {
+  if (Buffer.isBuffer(imageInput)) {
+    const fileId = await uploadFile(endpoint, imageInput, 'image/jpeg', filename);
+    return { src_file_id: fileId };
+  }
+
+  const str = String(imageInput).trim();
+  if (str.startsWith('data:') || str.length > 500) {
+    const cleanBase64 = str.replace(/^data:image\/\w+;base64,/, '');
+    const buf = Buffer.from(cleanBase64, 'base64');
+    const fileId = await uploadFile(endpoint, buf, 'image/jpeg', filename);
+    return { src_file_id: fileId };
+  }
+
+  if (str.startsWith('http://') || str.startsWith('https://')) {
+    return { src_file_url: str };
+  }
+
+  // Already a YouCam file_id
+  return { src_file_id: str };
+}
+

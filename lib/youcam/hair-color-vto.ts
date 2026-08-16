@@ -1,4 +1,4 @@
-import { uploadFile, runTask, pollTask } from './client';
+import { runTask, pollTask, resolveImageInput } from './client';
 import { ColorTonesResult } from '@/types/beauty-profile';
 
 export interface HairColorShade {
@@ -73,16 +73,10 @@ export async function applyHairColorVTO(
   const chosenShade = HAIR_COLOR_SHADES.find((c) => c.id === colorId) || HAIR_COLOR_SHADES[0];
 
   try {
-    let fileId: string;
-    if (Buffer.isBuffer(imageInput)) {
-      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'haircolor_src.jpg');
-    } else {
-      fileId = imageInput;
-    }
+    const imagePayload = await resolveImageInput(imageInput, 'haircolor_src.jpg');
 
     const taskId = await runTask('/s2s/v2.0/task/hair-color', {
-      src_file_id: fileId.startsWith('http') ? undefined : fileId,
-      src_file_url: fileId.startsWith('http') ? fileId : undefined,
+      ...imagePayload,
       pattern: { name: 'full' },
       palettes: [
         {
@@ -94,7 +88,7 @@ export async function applyHairColorVTO(
     });
 
     const result = await pollTask<any>('/s2s/v2.0/task/hair-color', taskId, {
-      timeoutMs: 30000,
+      timeoutMs: 35000,
     });
 
     const outputUrl =
