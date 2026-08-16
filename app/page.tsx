@@ -61,6 +61,8 @@ function MirrorCheckContent() {
   const [skinTone, setSkinTone] = useState<SkinToneResult | null>(null);
   const [beautyProfile, setBeautyProfile] = useState<UserBeautyProfile | null>(null);
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [engineSource, setEngineSource] = useState<string | null>(null);
+  const [engineNotice, setEngineNotice] = useState<string | null>(null);
   const [makeupResultUrl, setMakeupResultUrl] = useState<string | null>(null);
   const [makeupError, setMakeupError] = useState<string | null>(null);
   const [outfitResultUrl, setOutfitResultUrl] = useState<string | null>(null);
@@ -78,6 +80,8 @@ function MirrorCheckContent() {
     setIsAnalyzing(true);
     setErrorMessage(null);
     setRecommendation(null);
+    setEngineNotice(null);
+    setEngineSource(null);
     setMakeupResultUrl(null);
     setMakeupError(null);
     setOutfitResultUrl(null);
@@ -105,6 +109,8 @@ function MirrorCheckContent() {
       setSkinTone(data.skinTone);
       setBeautyProfile(data.beautyProfile);
       setRecommendation(data.recommendation);
+      setEngineSource(data.engineSource || null);
+      setEngineNotice(data.engineNotice || null);
       setIsAnalyzing(false);
 
       // Smooth scroll to results
@@ -380,6 +386,8 @@ function MirrorCheckContent() {
             explanation={recommendation.explanation}
             beautyProfile={beautyProfile || undefined}
             userImageUrl={selectedSelfie || undefined}
+            engineSource={engineSource || undefined}
+            engineNotice={engineNotice || undefined}
           />
 
           {/* 3. Personalized Skincare Routine (With Conflict Protection) */}

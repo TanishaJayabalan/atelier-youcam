@@ -51,6 +51,10 @@ export async function analyzeColorTones(
       face_angle_strictness_level: 'medium',
     });
 
+    const result = await pollTask<any>('/s2s/v2.0/task/skin-tone-analysis', taskId, {
+      timeoutMs: 25000,
+    });
+
     const colorObj =
       result?.data?.results?.color ||
       result?.results?.color ||

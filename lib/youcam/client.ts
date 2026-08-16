@@ -42,7 +42,7 @@ export function formatYouCamError(rawCode?: string, rawMsg?: string): YouCamTask
 }
 
 function getApiBase(): string {
-  const custom = process.env.YOUCAM_API_BASE || 'https://yce-api-01.perfectcorp.com';
+  const custom = process.env.YOUCAM_API_BASE || 'https://yce-api-01.makeupar.com';
   return custom.replace(/\/+$/, '');
 }
 

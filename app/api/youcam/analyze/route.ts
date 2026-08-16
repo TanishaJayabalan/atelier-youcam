@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { base64ToBuffer } from '@/lib/image-utils';
 import { analyzeParallelBeautyProfile } from '@/lib/youcam/parallel-analyzer';
 import { analyzeSkinTone } from '@/lib/youcam/skin-tone';
+import { analyzeImageOptically } from '@/lib/optical-analyzer';
 import { fetchWeather, WeatherResult } from '@/lib/weather';
 import { getClosetItems, saveLookSession } from '@/lib/supabase';
 import { generateRecommendation } from '@/lib/recommendation-engine';
@@ -41,7 +42,6 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      // Default to standard atmospheric baseline if coordinates were denied
       try {
         weather = await fetchWeather(37.7749, -122.4194, 'San Francisco');
       } catch (err: any) {
@@ -52,16 +52,43 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Run Parallel Multi-AI Analyzer Pipeline (Skin + Fitzpatrick + Color Tones + Face Attributes) + Skin Tone + Closet
-    const [beautyProfile, skinTone, closetItems] = await Promise.all([
-      analyzeParallelBeautyProfile(selfieBuffer),
-      analyzeSkinTone(selfieBuffer, contentType),
-      getClosetItems(),
-    ]);
+    // 2. Fetch Closet Items
+    const closetItems = await getClosetItems();
 
-    const skinAnalysis = beautyProfile.skin;
+    // 3. Attempt Live YouCam AI Analysis -> Optical Pixel Analyzer Fallback
+    let beautyProfile: any;
+    let skinTone: any;
+    let skinAnalysis: any;
+    let engineSource = 'youcam_ai';
+    let engineNotice: string | undefined;
 
-    // 3. Generate Unified Recommendations
+    try {
+      console.log('[Analyze Route]: Attempting live YouCam S2S AI analysis...');
+      const [bpRes, stRes] = await Promise.all([
+        analyzeParallelBeautyProfile(selfieBuffer),
+        analyzeSkinTone(selfieBuffer, contentType),
+      ]);
+      beautyProfile = bpRes;
+      skinTone = stRes;
+      skinAnalysis = beautyProfile.skin;
+      console.log('✓ Live YouCam AI Analysis succeeded');
+    } catch (youcamErr: any) {
+      console.warn('[Analyze Route]: Live YouCam AI returned:', youcamErr.message);
+      console.log('[Analyze Route]: Running High-Precision Optical Pixel Analyzer fallback...');
+
+      const opticalRes = await analyzeImageOptically(selfieBuffer);
+      beautyProfile = opticalRes.beautyProfile;
+      skinTone = opticalRes.skinTone;
+      skinAnalysis = opticalRes.skinAnalysis;
+
+      const isCreditLimit = youcamErr.message?.includes('CreditInsufficiency') || youcamErr.message?.includes('credits');
+      engineSource = isCreditLimit ? 'optical_pixel_analyzer_credits_exhausted' : 'optical_pixel_analyzer';
+      engineNotice = isCreditLimit
+        ? "YouCam API credits are currently exhausted. Extracted 100% dynamic diagnostics via High-Precision Optical Pixel Analysis."
+        : `Optical Pixel Diagnostics active (${youcamErr.message})`;
+    }
+
+    // 4. Generate Unified Recommendations
     const recommendation = generateRecommendation({
       skin: skinAnalysis,
       skinTone,
@@ -70,7 +97,7 @@ export async function POST(req: NextRequest) {
       closet: closetItems,
     });
 
-    // 4. Save intermediate look session
+    // 5. Save intermediate look session
     const session = await saveLookSession({
       vibe,
       skin_analysis: skinAnalysis,
@@ -87,6 +114,8 @@ export async function POST(req: NextRequest) {
       beautyProfile,
       weather,
       recommendation,
+      engineSource,
+      engineNotice,
     });
   } catch (err: any) {
     console.error('Analyze route error:', err);

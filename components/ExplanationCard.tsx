@@ -17,6 +17,8 @@ interface ExplanationCardProps {
   explanation: string;
   beautyProfile?: UserBeautyProfile;
   userImageUrl?: string;
+  engineSource?: string;
+  engineNotice?: string;
 }
 
 export default function ExplanationCard({
@@ -26,6 +28,8 @@ export default function ExplanationCard({
   weather,
   beautyProfile,
   userImageUrl,
+  engineSource,
+  engineNotice,
 }: ExplanationCardProps) {
   const rednessScore = skin.concerns.redness?.score || 0;
   const acneScore = skin.concerns.acne?.score || 0;
@@ -70,7 +74,7 @@ export default function ExplanationCard({
       <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 overflow-hidden relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-stone-100">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center flex-wrap gap-2">
               <span className="text-[11px] font-bold uppercase tracking-widest text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
                 Daily Mirror Check Summary
               </span>
@@ -82,10 +86,27 @@ export default function ExplanationCard({
                   Fitzpatrick {beautyProfile.fitzpatrick.type}
                 </span>
               )}
+              {engineSource && (
+                <span
+                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                    engineSource === 'youcam_ai'
+                      ? 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                      : 'text-amber-800 bg-amber-50 border-amber-200'
+                  }`}
+                  title={engineNotice || 'Diagnostic Engine Status'}
+                >
+                  {engineSource === 'youcam_ai' ? '✨ Live YouCam AI' : '🔬 Optical Pixel Diagnostics'}
+                </span>
+              )}
             </div>
             <h2 className="text-xl font-bold text-stone-900 mt-2">
               Harmonized Look &amp; Skin Strategy
             </h2>
+            {engineNotice && (
+              <p className="text-[11px] text-amber-800/90 bg-amber-50/80 px-2.5 py-1 rounded-lg border border-amber-200/50 inline-block mt-1.5">
+                ℹ️ {engineNotice}
+              </p>
+            )}
           </div>
 
           {/* Vitality Score Badge */}

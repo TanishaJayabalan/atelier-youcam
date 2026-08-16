@@ -69,7 +69,7 @@ export async function getAccessToken(forceRefresh = false): Promise<string> {
   inflightAuthPromise = (async () => {
     const clientId = process.env.YOUCAM_CLIENT_ID;
     const clientSecret = process.env.YOUCAM_CLIENT_SECRET;
-    const apiBase = (process.env.YOUCAM_API_BASE || 'https://yce-api-01.perfectcorp.com').replace(/\/+$/, '');
+    const apiBase = (process.env.YOUCAM_API_BASE || 'https://yce-api-01.makeupar.com').replace(/\/+$/, '');
 
     if (!clientId || !clientSecret) {
       throw new Error('Missing YOUCAM_CLIENT_ID or YOUCAM_CLIENT_SECRET — cannot authenticate with YouCam API.');
