@@ -237,7 +237,7 @@ function MirrorCheckContent() {
               className="text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl border border-stone-200 flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Shirt className="w-3.5 h-3.5 text-amber-700" />
-              {showCloset ? 'Hide Wardrobe Vault' : 'View Wardrobe Vault (20 Items)'}
+              {showCloset ? 'Hide Wardrobe Vault' : 'View Wardrobe Vault'}
             </button>
             <HeaderCartButton />
           </div>
