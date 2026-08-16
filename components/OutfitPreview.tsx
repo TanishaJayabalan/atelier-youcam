@@ -23,7 +23,7 @@ interface OutfitPreviewProps {
   renderedImageUrl: string | null;
   outfitError?: string | null;
   isRendering: boolean;
-  onTryOnOutfit?: (bodyPhotoBase64: string, outfitItem: any) => Promise<void>;
+  onTryOnOutfit?: (bodyPhotoBase64: string, outfitItems: any[]) => Promise<void>;
   onRetry?: () => void;
 }
 
@@ -57,6 +57,7 @@ export default function OutfitPreview({
 
   const [bodyPhoto, setBodyPhoto] = useState<string | null>(null);
   const [sourceType, setSourceType] = useState<'upload' | 'camera' | 'samples'>('upload');
+  const [selectedPieceMode, setSelectedPieceMode] = useState<'all' | 'top' | 'bottom' | 'outerwear'>('all');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -66,6 +67,19 @@ export default function OutfitPreview({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isStartingRef = useRef(false);
+
+  const getGarmentsToTryOn = () => {
+    if (selectedPieceMode === 'top' && topOrDress) return [topOrDress];
+    if (selectedPieceMode === 'bottom' && bottom) return [bottom];
+    if (selectedPieceMode === 'outerwear' && outerwear) return [outerwear];
+
+    // Default: 'all' -> Full Ensemble in sequential pipeline (Top -> Bottom -> Outerwear)
+    const list: any[] = [];
+    if (topOrDress) list.push(topOrDress);
+    if (bottom) list.push(bottom);
+    if (outerwear) list.push(outerwear);
+    return list;
+  };
 
   // Convert image URL to base64
   const loadUrlAsBase64 = useCallback(async (url: string) => {
@@ -199,9 +213,11 @@ export default function OutfitPreview({
   };
 
   const handleTriggerTryOn = async () => {
-    if (!bodyPhoto || !topOrDress) return;
+    if (!bodyPhoto) return;
+    const garments = getGarmentsToTryOn();
+    if (garments.length === 0) return;
     if (onTryOnOutfit) {
-      await onTryOnOutfit(bodyPhoto, topOrDress);
+      await onTryOnOutfit(bodyPhoto, garments);
     }
   };
 
@@ -385,6 +401,67 @@ export default function OutfitPreview({
               </div>
             )}
 
+            {/* Ensemble Piece Selector Chips (When multi-piece outfit exists) */}
+            {bodyPhoto && (bottom || outerwear) && (
+              <div className="mt-3.5 pt-3 border-t border-stone-200">
+                <span className="text-[10px] font-bold text-stone-600 uppercase tracking-wider block mb-1.5">
+                  Try-On Selection:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPieceMode('all')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                      selectedPieceMode === 'all'
+                        ? 'bg-amber-700 text-white shadow-xs'
+                        : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300'
+                    }`}
+                  >
+                    ✨ Full Ensemble ({topOrDress ? 'Top' : ''}{bottom ? ' + Pants' : ''})
+                  </button>
+                  {topOrDress && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPieceMode('top')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                        selectedPieceMode === 'top'
+                          ? 'bg-amber-700 text-white shadow-xs'
+                          : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300'
+                      }`}
+                    >
+                      Top Only
+                    </button>
+                  )}
+                  {bottom && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPieceMode('bottom')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                        selectedPieceMode === 'bottom'
+                          ? 'bg-amber-700 text-white shadow-xs'
+                          : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300'
+                      }`}
+                    >
+                      Pants Only
+                    </button>
+                  )}
+                  {outerwear && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPieceMode('outerwear')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                        selectedPieceMode === 'outerwear'
+                          ? 'bg-amber-700 text-white shadow-xs'
+                          : 'bg-stone-200/80 text-stone-700 hover:bg-stone-300'
+                      }`}
+                    >
+                      Outerwear Only
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Action Trigger Button */}
             {bodyPhoto && (
               <button
@@ -394,7 +471,13 @@ export default function OutfitPreview({
                 className="mt-3 w-full py-2.5 bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-200" />
-                ✨ Try On This Outfit on My Body
+                {selectedPieceMode === 'all'
+                  ? '✨ Try On Full Ensemble on My Body'
+                  : selectedPieceMode === 'top'
+                  ? '✨ Try On Top on My Body'
+                  : selectedPieceMode === 'bottom'
+                  ? '✨ Try On Pants on My Body'
+                  : '✨ Try On Outerwear on My Body'}
               </button>
             )}
           </div>

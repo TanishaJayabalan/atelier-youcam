@@ -170,8 +170,11 @@ function MirrorCheckContent() {
   };
 
   // Dedicated Clothes Try-On Handler with user-uploaded body photo
-  const handleTryOnOutfit = async (bodyPhotoBase64: string, outfitItem: any) => {
-    if (!bodyPhotoBase64 || !outfitItem) return;
+  const handleTryOnOutfit = async (bodyPhotoBase64: string, outfitItems: any) => {
+    if (!bodyPhotoBase64 || !outfitItems) return;
+    const itemsArray = Array.isArray(outfitItems) ? outfitItems : [outfitItems];
+    if (itemsArray.length === 0) return;
+
     setIsRenderingOutfit(true);
     setOutfitError(null);
     try {
@@ -182,7 +185,7 @@ function MirrorCheckContent() {
           sessionId,
           selfieBase64: bodyPhotoBase64,
           makeupSteps: [],
-          outfitItem: outfitItem || recommendation?.outfit?.topOrDress || null,
+          outfitItems: itemsArray,
         }),
       });
       const data = await res.json();

@@ -182,3 +182,59 @@ export async function applyOutfit(
   }
 }
 
+export interface GarmentToApply {
+  name: string;
+  category: string;
+  image_url: string;
+}
+
+/**
+ * Executes multi-garment virtual try-on in sequential pipeline (e.g. Top -> Bottom -> Outerwear).
+ */
+export async function applyMultiGarmentOutfit(
+  initialBodyBuffer: Buffer,
+  garments: GarmentToApply[],
+  bodyContentType: string = 'image/jpeg'
+): Promise<ClothesVTOResult> {
+  const validGarments = garments.filter((g) => Boolean(g && g.image_url));
+  if (validGarments.length === 0) {
+    throw new Error('No valid garments provided for virtual try-on.');
+  }
+
+  let currentBuffer = initialBodyBuffer;
+  let currentContentType = bodyContentType;
+  let lastResult: ClothesVTOResult | null = null;
+
+  for (let i = 0; i < validGarments.length; i++) {
+    const garment = validGarments[i];
+    
+    // Apply current garment onto the canvas
+    lastResult = await applyOutfit(currentBuffer, garment.image_url, {
+      garmentName: garment.name,
+      category: garment.category,
+      selfieContentType: currentContentType,
+    });
+
+    // If there are subsequent garments to chain, fetch intermediate canvas output
+    if (i < validGarments.length - 1 && lastResult.resultImageUrl) {
+      try {
+        const intermediateRes = await fetch(lastResult.resultImageUrl);
+        if (intermediateRes.ok) {
+          const intermediateArr = await intermediateRes.arrayBuffer();
+          currentBuffer = Buffer.from(intermediateArr);
+          currentContentType = 'image/jpeg';
+        }
+      } catch (chainErr) {
+        console.warn('Could not fetch intermediate clothes VTO result for chaining:', chainErr);
+      }
+    }
+  }
+
+  if (!lastResult) {
+    throw new Error('Clothes VTO failed to produce any result.');
+  }
+
+  return lastResult;
+}
+
+
