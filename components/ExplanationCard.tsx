@@ -117,12 +117,16 @@ export default function ExplanationCard({
             <p className="text-xs text-stone-600">
               {hasRedness ? (
                 <span className="text-amber-800 font-medium">
-                  Active redness detected ({skin.concerns.redness?.score || 35}%). Routine adjusted for barrier recovery.
+                  Active redness detected ({skin.concerns.redness?.score ?? 35}%). Routine adjusted for barrier recovery.
                 </span>
               ) : (
                 <span>
-                  Barrier equilibrium stable at <strong className="text-stone-800">{skin.overallScore}/100</strong> vitality with{' '}
-                  <strong className="text-stone-800">{skin.concerns.moisture?.score || 82}%</strong> hydration balance.
+                  Barrier equilibrium stable at <strong className="text-stone-800">{skin.overallScore}/100</strong> vitality
+                  {skin.concerns.moisture?.score !== undefined ? (
+                    <> with <strong className="text-stone-800">{skin.concerns.moisture.score}%</strong> hydration balance.</>
+                  ) : (
+                    <> with optimal moisture barrier balance.</>
+                  )}
                 </span>
               )}
             </p>

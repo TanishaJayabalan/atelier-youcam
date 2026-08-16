@@ -91,7 +91,7 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
   const typedConcerns: Record<string, ConcernScore> = {};
   let detectedSkinType: string | undefined;
 
-  // 1. Unpack array format from YouCam S2S API (raw.data.results.output)
+  // 1. Unpack array format from YouCam S2S API (raw.data.results.output or raw.results.output)
   const outputArray =
     raw?.data?.results?.output ||
     raw?.results?.output ||
@@ -119,10 +119,11 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
 
       const normalizedScore = Math.max(0, Math.min(100, Math.round(Number(rawScore))));
       const severity = scoreToSeverity(normalizedScore);
-      const displayName = DISPLAY_NAMES[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+      const cleanKey = key.replace(/^hd_/, '');
+      const displayName = DISPLAY_NAMES[cleanKey] || DISPLAY_NAMES[key] || cleanKey.charAt(0).toUpperCase() + cleanKey.slice(1).replace(/_/g, ' ');
 
-      typedConcerns[key] = {
-        key: key as ConcernKey,
+      typedConcerns[cleanKey] = {
+        key: cleanKey as ConcernKey,
         displayName,
         label: displayName,
         score: normalizedScore,
@@ -132,8 +133,11 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
     }
   }
 
-  // 2. Unpack object format (fallback or mock format)
+  // 2. Unpack score_info or object format (raw.data.results.score_info, raw.results.score_info, etc.)
   const rawObj =
+    raw?.data?.results?.score_info ||
+    raw?.results?.score_info ||
+    raw?.score_info ||
     raw?.concerns ||
     raw?.results?.concerns ||
     raw?.result?.concerns ||
@@ -143,29 +147,55 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
 
   if (rawObj && typeof rawObj === 'object') {
     for (const [key, val] of Object.entries(rawObj)) {
-      if (!key || typedConcerns[key]) continue;
-      const rawScore =
-        typeof val === 'number'
-          ? val
-          : (val as any)?.ui_score ?? (val as any)?.raw_score ?? (val as any)?.score ?? (val as any)?.value ?? 0;
-      const normalizedScore = Math.max(0, Math.min(100, Math.round(Number(rawScore))));
-      const severity = scoreToSeverity(normalizedScore);
-      const displayName = DISPLAY_NAMES[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+      if (!key || key === 'all' || key === 'skin_age') continue;
+      const cleanKey = key.toLowerCase().replace(/^hd_/, '');
+      if (typedConcerns[cleanKey]) continue;
 
-      typedConcerns[key] = {
-        key: key as ConcernKey,
-        displayName,
-        label: displayName,
-        score: normalizedScore,
-        severity,
-        subRegions: (val as any)?.sub_regions,
-      };
+      let rawScore: number | undefined;
+      let subRegions: Record<string, number> | undefined;
+
+      if (typeof val === 'number') {
+        rawScore = val;
+      } else if (val && typeof val === 'object') {
+        if (typeof (val as any).ui_score === 'number' || typeof (val as any).raw_score === 'number' || typeof (val as any).score === 'number') {
+          rawScore = (val as any).ui_score ?? (val as any).raw_score ?? (val as any).score ?? (val as any).value;
+        } else {
+          // Check nested subregions like { whole: { ui_score: 75 } } or { forehead: { ui_score: 80 } }
+          const subScores: number[] = [];
+          for (const subVal of Object.values(val as Record<string, any>)) {
+            if (typeof subVal === 'number') subScores.push(subVal);
+            else if (subVal && typeof subVal === 'object') {
+              const s = (subVal as any).ui_score ?? (subVal as any).raw_score ?? (subVal as any).score;
+              if (typeof s === 'number') subScores.push(s);
+            }
+          }
+          if (subScores.length > 0) {
+            rawScore = subScores.reduce((sum, s) => sum + s, 0) / subScores.length;
+          }
+          subRegions = val as Record<string, number>;
+        }
+      }
+
+      if (rawScore !== undefined) {
+        const normalizedScore = Math.max(0, Math.min(100, Math.round(Number(rawScore))));
+        const severity = scoreToSeverity(normalizedScore);
+        const displayName = DISPLAY_NAMES[cleanKey] || DISPLAY_NAMES[key] || cleanKey.charAt(0).toUpperCase() + cleanKey.slice(1).replace(/_/g, ' ');
+
+        typedConcerns[cleanKey] = {
+          key: cleanKey as ConcernKey,
+          displayName,
+          label: displayName,
+          score: normalizedScore,
+          severity,
+          subRegions,
+        };
+      }
     }
   }
 
   const topConcerns = Object.values(typedConcerns)
     .filter((c) =>
-      ['redness', 'pores', 'pore', 'dark_circles', 'dark_circle', 'oiliness', 'texture', 'wrinkles', 'acne', 'moisture', 'radiance'].includes(c.key)
+      ['redness', 'pores', 'pore', 'dark_circles', 'dark_circle', 'dark_circle_v2', 'oiliness', 'texture', 'wrinkles', 'acne', 'moisture', 'radiance'].includes(c.key)
     )
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
@@ -176,6 +206,7 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
     raw?.skinType ||
     raw?.data?.results?.skin_type ||
     raw?.result?.skin_type ||
+    raw?.data?.results?.score_info?.skin_type ||
     'normal'
   ).toLowerCase();
 
@@ -188,20 +219,37 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
   const scoredConcerns = Object.values(typedConcerns);
   const avgConcernScore =
     scoredConcerns.length > 0
-      ? scoredConcerns.reduce((sum, c) => sum + c.score, 0) / scoredConcerns.length
-      : 20;
+      ? Math.round(scoredConcerns.reduce((sum, c) => sum + c.score, 0) / scoredConcerns.length)
+      : undefined;
 
-  const overallScore =
-    raw?.overall_score ||
-    raw?.overallScore ||
-    raw?.data?.results?.overall_score ||
-    raw?.result?.overall_score ||
-    Math.max(1, Math.min(100, Math.round(100 - avgConcernScore * 0.75)));
+  // Determine overall score: prioritize YouCam explicit overall / all score, then biomarker mean
+  const explicitOverall =
+    raw?.data?.results?.score_info?.all?.ui_score ??
+    raw?.data?.results?.score_info?.all?.raw_score ??
+    raw?.data?.results?.score_info?.all ??
+    raw?.data?.results?.all ??
+    raw?.results?.all ??
+    raw?.all ??
+    raw?.overall_score ??
+    raw?.overallScore ??
+    raw?.data?.results?.overall_score ??
+    raw?.result?.overall_score;
+
+  const overallScore = explicitOverall !== undefined
+    ? Math.max(1, Math.min(100, Math.round(Number(explicitOverall))))
+    : (avgConcernScore !== undefined ? avgConcernScore : 78);
+
+  const detectedSkinAge =
+    raw?.skin_age ??
+    raw?.skinAge ??
+    raw?.data?.results?.skin_age ??
+    raw?.data?.results?.score_info?.skin_age ??
+    undefined;
 
   return {
     skinType,
     overallScore: Math.max(1, Math.min(100, overallScore)),
-    skinAge: raw?.skin_age || raw?.skinAge || raw?.data?.results?.skin_age || undefined,
+    skinAge: detectedSkinAge ? Math.round(Number(detectedSkinAge)) : undefined,
     concerns: typedConcerns,
     topConcerns,
     rawResponse: raw,
@@ -214,7 +262,7 @@ export async function analyzeSkin(
 ): Promise<SkinAnalysisResult> {
   try {
     const fileId = await uploadFile(
-      '/s2s/v1.0/file/skin-analysis',
+      '/s2s/v2.0/file',
       selfieBuffer,
       contentType,
       'selfie_skin_analysis.jpg'
@@ -223,17 +271,21 @@ export async function analyzeSkin(
     const taskId = await runTask('/s2s/v2.0/task/skin-analysis', {
       src_file_id: fileId,
       dst_actions: [
-        'skin_type',
-        'texture',
-        'redness',
-        'oiliness',
-        'moisture',
-        'pore',
-        'radiance',
-        'firmness',
+        'wrinkle',
         'droopy_upper_eyelid',
         'droopy_lower_eyelid',
+        'firmness',
         'acne',
+        'moisture',
+        'eye_bag',
+        'dark_circle_v2',
+        'age_spot',
+        'radiance',
+        'redness',
+        'oiliness',
+        'pore',
+        'texture',
+        'skin_type',
       ],
     });
 
