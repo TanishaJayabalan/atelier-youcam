@@ -1,11 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SkinAnalysisResult } from '@/lib/youcam/skin-analysis';
 
 interface SkinSimulationCardProps {
   originalImageUrl?: string;
   skinAnalysis?: SkinAnalysisResult;
+}
+
+interface ProjectedMetric {
+  concern: string;
+  baselineScore: number;
+  projectedScore: number;
+  improvementPercent: number;
 }
 
 export default function SkinSimulationCard({
@@ -15,7 +22,102 @@ export default function SkinSimulationCard({
   const [sliderPos, setSliderPos] = useState<number>(50);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [simulatedUrl, setSimulatedUrl] = useState<string | null>(null);
+  const [apiProjections, setApiProjections] = useState<ProjectedMetric[] | null>(null);
   const [activeTab, setActiveTab] = useState<'slider' | 'projections'>('slider');
+
+  // Compute initial real dynamic projections from user's actual skin analysis
+  const dynamicProjections: ProjectedMetric[] = useMemo(() => {
+    if (!skinAnalysis?.concerns) {
+      return [
+        { concern: 'Micro-vascular Erythema / Redness', baselineScore: 65, projectedScore: 92, improvementPercent: 42 },
+        { concern: 'Pore Diameter & Sebum Clarity', baselineScore: 58, projectedScore: 88, improvementPercent: 52 },
+        { concern: 'Epidermal Hydration & Radiance', baselineScore: 70, projectedScore: 94, improvementPercent: 34 },
+      ];
+    }
+
+    const list: ProjectedMetric[] = [];
+    const concerns = skinAnalysis.concerns;
+
+    if (concerns.redness) {
+      const raw = concerns.redness.score;
+      const boost = Math.round(Math.max(18, (100 - raw) * 0.65));
+      list.push({
+        concern: 'Micro-vascular Erythema / Redness',
+        baselineScore: raw,
+        projectedScore: Math.min(96, raw + boost),
+        improvementPercent: boost,
+      });
+    }
+
+    if (concerns.pores || concerns.pore) {
+      const raw = concerns.pores?.score ?? concerns.pore?.score ?? 55;
+      const boost = Math.round(Math.max(15, (100 - raw) * 0.55));
+      list.push({
+        concern: 'Pore Refinement & Sebum Balance',
+        baselineScore: raw,
+        projectedScore: Math.min(96, raw + boost),
+        improvementPercent: boost,
+      });
+    }
+
+    if (concerns.acne) {
+      const raw = concerns.acne.score;
+      const boost = Math.round(Math.max(22, (100 - raw) * 0.70));
+      list.push({
+        concern: 'Blemish Clearance & Barrier Repair',
+        baselineScore: raw,
+        projectedScore: Math.min(95, raw + boost),
+        improvementPercent: boost,
+      });
+    }
+
+    if (concerns.dark_circles || concerns.dark_circle || concerns.dark_circle_v2) {
+      const raw = concerns.dark_circles?.score || concerns.dark_circle?.score || concerns.dark_circle_v2?.score || 60;
+      const boost = Math.round(Math.max(18, (100 - raw) * 0.50));
+      list.push({
+        concern: 'Periorbital Micro-Circulation & Tone',
+        baselineScore: raw,
+        projectedScore: Math.min(94, raw + boost),
+        improvementPercent: boost,
+      });
+    }
+
+    if (concerns.texture) {
+      const raw = concerns.texture.score;
+      const boost = Math.round(Math.max(15, (100 - raw) * 0.55));
+      list.push({
+        concern: 'Epidermal Texture & Smoothing',
+        baselineScore: raw,
+        projectedScore: Math.min(96, raw + boost),
+        improvementPercent: boost,
+      });
+    }
+
+    if (concerns.wrinkles || concerns.wrinkle) {
+      const raw = concerns.wrinkles?.score || concerns.wrinkle?.score || 70;
+      const boost = Math.round(Math.max(15, (100 - raw) * 0.50));
+      list.push({
+        concern: 'Fine Line Smoothing & Plumping',
+        baselineScore: raw,
+        projectedScore: Math.min(95, raw + boost),
+        improvementPercent: boost,
+      });
+    }
+
+    // Radiance / Vitality
+    const overall = skinAnalysis.overallScore || 78;
+    const boost = Math.round(Math.max(15, (100 - overall) * 0.60));
+    list.push({
+      concern: 'Epidermal Hydration & Radiance',
+      baselineScore: overall,
+      projectedScore: Math.min(97, overall + boost),
+      improvementPercent: boost,
+    });
+
+    return list;
+  }, [skinAnalysis]);
+
+  const activeProjections = apiProjections || dynamicProjections;
 
   const handleSimulate = async () => {
     if (!originalImageUrl) return;
@@ -25,13 +127,17 @@ export default function SkinSimulationCard({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userImageUrl: originalImageUrl,
+          userImageUrl: originalImageUrl.startsWith('data:') ? undefined : originalImageUrl,
+          userImageBase64: originalImageUrl.startsWith('data:') ? originalImageUrl : undefined,
           skinAnalysis,
         }),
       });
       const data = await res.json();
       if (data.simulatedImageUrl) {
         setSimulatedUrl(data.simulatedImageUrl);
+      }
+      if (data.projectedConcerns && Array.isArray(data.projectedConcerns)) {
+        setApiProjections(data.projectedConcerns);
       }
     } catch (err) {
       console.error('Skin simulation error:', err);
@@ -57,7 +163,7 @@ export default function SkinSimulationCard({
             <span className="text-xs text-stone-400">30-Day Routine Projection</span>
           </div>
           <h3 className="text-lg font-serif font-medium text-stone-100">
-            Projected Skin Barrier Recovery & Radiance
+            Projected Skin Barrier Recovery &amp; Radiance
           </h3>
         </div>
 
@@ -66,7 +172,7 @@ export default function SkinSimulationCard({
             <button
               onClick={handleSimulate}
               disabled={isSimulating}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-medium text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-medium text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
             >
               {isSimulating ? (
                 <>
@@ -87,7 +193,7 @@ export default function SkinSimulationCard({
             <div className="flex items-center bg-stone-800/80 p-0.5 rounded-lg border border-stone-700 text-xs">
               <button
                 onClick={() => setActiveTab('slider')}
-                className={`px-3 py-1 rounded-md transition-colors ${
+                className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
                   activeTab === 'slider' ? 'bg-amber-600 text-white font-medium' : 'text-stone-400 hover:text-white'
                 }`}
               >
@@ -95,7 +201,7 @@ export default function SkinSimulationCard({
               </button>
               <button
                 onClick={() => setActiveTab('projections')}
-                className={`px-3 py-1 rounded-md transition-colors ${
+                className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
                   activeTab === 'projections' ? 'bg-amber-600 text-white font-medium' : 'text-stone-400 hover:text-white'
                 }`}
               >
@@ -160,7 +266,7 @@ export default function SkinSimulationCard({
           />
         </div>
 
-        {/* Clinical Projections Checklist */}
+        {/* Dynamic Clinical Projections Checklist */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-3.5 text-xs">
           <div className="bg-stone-950/60 p-4 rounded-xl border border-stone-800/80 space-y-3">
             <h4 className="font-medium text-stone-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
@@ -168,36 +274,23 @@ export default function SkinSimulationCard({
               Expected Clinical Trajectory
             </h4>
 
-            <div className="space-y-2.5">
-              <div>
-                <div className="flex justify-between text-[11px] mb-1">
-                  <span className="text-stone-400">Micro-vascular Erythema / Redness</span>
-                  <span className="text-emerald-400 font-semibold">-58% Soothed</span>
+            <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+              {activeProjections.map((item, idx) => (
+                <div key={idx}>
+                  <div className="flex justify-between text-[11px] mb-1">
+                    <span className="text-stone-300 font-medium">{item.concern}</span>
+                    <span className="text-emerald-400 font-semibold">
+                      +{item.improvementPercent}% Projected ({item.baselineScore} → {item.projectedScore})
+                    </span>
+                  </div>
+                  <div className="w-full bg-stone-800/90 rounded-full h-2 overflow-hidden flex items-center">
+                    <div
+                      className="bg-gradient-to-r from-amber-500 via-emerald-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(15, item.projectedScore))}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-stone-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full rounded-full w-[85%]" />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-[11px] mb-1">
-                  <span className="text-stone-400">Pore Diameter & Sebum Clarity</span>
-                  <span className="text-emerald-400 font-semibold">+42% Refined</span>
-                </div>
-                <div className="w-full bg-stone-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full rounded-full w-[78%]" />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-[11px] mb-1">
-                  <span className="text-stone-400">Epidermal Hydration & Radiance</span>
-                  <span className="text-emerald-400 font-semibold">+65% Vitality</span>
-                </div>
-                <div className="w-full bg-stone-800 rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full rounded-full w-[92%]" />
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 

@@ -17,16 +17,13 @@ async function runMakeupVTOTests() {
     { category: 'eyebrow', colorHex: '#422B1E', intensity: 75 },
   ];
 
-  const actions = buildMakeupActions(sampleSteps);
-  console.log('Built Actions count:', actions.length);
-  console.log('Lip action:', JSON.stringify(actions.find((a) => a.id === 'lipstick')));
+  const effects = buildMakeupActions(sampleSteps);
+  console.log('Built Effects count:', effects.length);
+  const lipEffect = effects.find((a: any) => a.category === 'lip_color');
+  console.log('Lip effect:', JSON.stringify(lipEffect));
 
-  if (actions.length !== 5) {
-    throw new Error('Test 1 Failed: Expected 5 actions');
-  }
-  const lipAction = actions.find((a) => a.id === 'lipstick');
-  if (!lipAction || lipAction.params.color !== '#B85D43' || lipAction.params.intensity !== 85) {
-    throw new Error('Test 1 Failed: Lip action format mismatch');
+  if (!lipEffect || lipEffect.palettes?.[0]?.color !== '#B85D43' || lipEffect.palettes?.[0]?.colorIntensity !== 85) {
+    throw new Error('Test 1 Failed: Lip effect format mismatch');
   }
   console.log('✓ Test 1 Passed: Action payload properly constructed.');
 

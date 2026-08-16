@@ -4,14 +4,14 @@ import { SkinAnalysisResult } from './skin-analysis';
 export interface SkinSimulationParams {
   redness?: number;
   acne?: number;
-  pores?: number;
+  pore?: number;
   texture?: number;
-  dark_circles?: number;
-  wrinkles?: number;
+  dark_circle?: number;
+  wrinkle?: number;
   radiance?: number;
-  spots?: number;
+  spot?: number;
   oiliness?: number;
-  eye_bags?: number;
+  eye_bag?: number;
 }
 
 export interface SkinSimulationResponse {
@@ -37,7 +37,7 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     return Math.max(0.2, Math.min(0.95, (100 - score) / 90));
   };
 
-  if (skin.concerns.redness) {
+  if (skin?.concerns?.redness) {
     const raw = skin.concerns.redness.score;
     const intensity = mapScore(raw);
     params.redness = Number(intensity.toFixed(2));
@@ -49,7 +49,7 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
-  if (skin.concerns.acne) {
+  if (skin?.concerns?.acne) {
     const raw = skin.concerns.acne.score;
     const intensity = mapScore(raw);
     params.acne = Number(intensity.toFixed(2));
@@ -61,10 +61,10 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
-  if (skin.concerns.pores || skin.concerns.pore) {
+  if (skin?.concerns?.pores || skin?.concerns?.pore) {
     const raw = skin.concerns.pores?.score ?? skin.concerns.pore?.score ?? 50;
     const intensity = mapScore(raw);
-    params.pores = Number(intensity.toFixed(2));
+    params.pore = Number(intensity.toFixed(2));
     projected.push({
       concern: 'Pore Refinement & Sebum Balance',
       baselineScore: raw,
@@ -73,7 +73,7 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
-  if (skin.concerns.texture) {
+  if (skin?.concerns?.texture) {
     const raw = skin.concerns.texture.score;
     const intensity = mapScore(raw);
     params.texture = Number(intensity.toFixed(2));
@@ -85,10 +85,10 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
-  if (skin.concerns.dark_circles || skin.concerns.dark_circle) {
-    const raw = skin.concerns.dark_circles?.score || skin.concerns.dark_circle?.score || 75;
+  if (skin?.concerns?.dark_circles || skin?.concerns?.dark_circle || skin?.concerns?.dark_circle_v2) {
+    const raw = skin.concerns.dark_circles?.score || skin.concerns.dark_circle?.score || skin.concerns.dark_circle_v2?.score || 75;
     const intensity = mapScore(raw);
-    params.dark_circles = Number(intensity.toFixed(2));
+    params.dark_circle = Number(intensity.toFixed(2));
     projected.push({
       concern: 'Periorbital Micro-Circulation & Brightening',
       baselineScore: raw,
@@ -97,11 +97,23 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     });
   }
 
+  if (skin?.concerns?.wrinkles || skin?.concerns?.wrinkle) {
+    const raw = skin.concerns.wrinkles?.score || skin.concerns.wrinkle?.score || 70;
+    const intensity = mapScore(raw);
+    params.wrinkle = Number(intensity.toFixed(2));
+    projected.push({
+      concern: 'Fine Line Smoothing & Collagen Plumping',
+      baselineScore: raw,
+      projectedScore: Math.min(95, raw + Math.round((100 - raw) * 0.6)),
+      improvementPercent: Math.round(intensity * 55),
+    });
+  }
+
   // Radiance boost
   params.radiance = 0.75;
   projected.push({
     concern: 'Overall Luminous Epidermal Radiance',
-    baselineScore: skin.overallScore || 78,
+    baselineScore: skin?.overallScore || 78,
     projectedScore: 94,
     improvementPercent: 28,
   });

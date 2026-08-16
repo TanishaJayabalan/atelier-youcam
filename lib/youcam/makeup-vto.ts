@@ -6,7 +6,7 @@ export interface MakeupStep {
   category: MakeupCategory;
   colorHex: string;
   intensity?: number; // 0 to 100
-  finish?: 'matte' | 'dewy' | 'satin' | 'shimmer' | 'glossy';
+  finish?: 'matte' | 'dewy' | 'satin' | 'shimmer' | 'glossy' | 'gloss';
   pattern?: string;
   productName?: string;
 }
@@ -18,41 +18,102 @@ export interface MakeupVTOResult {
 }
 
 /**
- * Maps standard categories and parameters into YouCam Makeup VTO task action objects.
+ * Builds the official YouCam v2.0 makeup effects payload structure.
  */
-export function buildMakeupActions(steps: MakeupStep[]): Array<{ id: string; params: Record<string, any> }> {
-  return steps.map((step) => {
-    const intensity = typeof step.intensity === 'number' ? Math.max(0, Math.min(100, step.intensity)) : 75;
+export function buildV2MakeupEffects(steps: MakeupStep[]): any[] {
+  const effects: any[] = [
+    {
+      category: 'skin_smooth',
+      skinSmoothStrength: 50,
+      skinSmoothColorIntensity: 50,
+    },
+  ];
+
+  for (const step of steps) {
+    const intensity = typeof step.intensity === 'number' ? Math.max(0, Math.min(100, step.intensity)) : 60;
     const cleanHex = step.colorHex.startsWith('#') ? step.colorHex : `#${step.colorHex}`;
 
-    const params: Record<string, any> = {
-      color: cleanHex,
-      intensity,
-    };
-
-    if (step.finish) {
-      params.texture = step.finish;
+    if (step.category === 'lip') {
+      const isGloss = step.finish === 'glossy' || step.finish === 'gloss';
+      effects.push({
+        category: 'lip_color',
+        shape: { name: 'original' },
+        morphology: { fullness: 20, wrinkless: 20 },
+        style: { type: 'full' },
+        palettes: [
+          {
+            color: cleanHex,
+            texture: isGloss ? 'gloss' : 'matte',
+            colorIntensity: intensity,
+            gloss: isGloss ? 70 : undefined,
+            transparencyIntensity: isGloss ? 50 : undefined,
+          },
+        ],
+      });
+    } else if (step.category === 'blush') {
+      effects.push({
+        category: 'blush',
+        pattern: { name: '1color1' },
+        palettes: [
+          {
+            color: cleanHex,
+            texture: 'matte',
+            colorIntensity: intensity,
+          },
+        ],
+      });
+    } else if (step.category === 'eyebrow') {
+      effects.push({
+        category: 'eyebrows',
+        pattern: {
+          type: 'shape',
+          name: 'SoftArch1',
+          curvature: 0,
+          thickness: 0,
+          definition: 0,
+        },
+        palettes: [
+          {
+            color: cleanHex,
+            texture: 'matte',
+            colorIntensity: intensity,
+          },
+        ],
+      });
+    } else if (step.category === 'eyeshadow') {
+      effects.push({
+        category: 'eye_shadow',
+        pattern: { name: '1color1' },
+        palettes: [
+          {
+            color: cleanHex,
+            texture: 'matte',
+            colorIntensity: intensity,
+          },
+        ],
+      });
+    } else if (step.category === 'foundation') {
+      effects.push({
+        category: 'foundation',
+        palettes: [
+          {
+            color: cleanHex,
+            colorIntensity: intensity,
+            glowIntensity: 40,
+            coverageIntensity: 50,
+          },
+        ],
+      });
     }
-    if (step.pattern) {
-      params.pattern = step.pattern;
-    }
+  }
 
-    let actionId: string = step.category;
-    if (step.category === 'lip') actionId = 'lipstick';
-    if (step.category === 'foundation') actionId = 'foundation';
-    if (step.category === 'blush') actionId = 'blush';
-    if (step.category === 'eyeshadow') actionId = 'eyeshadow';
-    if (step.category === 'eyebrow') actionId = 'eyebrow';
-
-    return {
-      id: actionId,
-      params,
-    };
-  });
+  return effects;
 }
 
+export const buildMakeupActions = buildV2MakeupEffects;
+
 /**
- * Executes Makeup Virtual Try-On using YouCam S2S API.
+ * Executes Makeup Virtual Try-On using YouCam S2S v2.0 API.
  */
 export async function applyMakeup(
   selfieBuffer: Buffer,
@@ -72,49 +133,28 @@ export async function applyMakeup(
       'selfie_makeup_vto.jpg'
     );
 
-    // Step 2: Build actions and run task
-    const taskId = await runTask('/s2s/v1.0/task/makeup-vto', {
-      payload: {
-        file_sets: {
-          src_ids: [fileId],
-        },
-        actions: [
-          {
-            id: 0,
-            params: {
-              lipstick: steps.find((s) => s.category === 'lip')?.colorHex
-                ? { color: steps.find((s) => s.category === 'lip')?.colorHex, intensity: steps.find((s) => s.category === 'lip')?.intensity || 80 }
-                : undefined,
-              blush: steps.find((s) => s.category === 'blush')?.colorHex
-                ? { color: steps.find((s) => s.category === 'blush')?.colorHex, intensity: steps.find((s) => s.category === 'blush')?.intensity || 60 }
-                : undefined,
-              foundation: steps.find((s) => s.category === 'foundation')?.colorHex
-                ? { color: steps.find((s) => s.category === 'foundation')?.colorHex, intensity: steps.find((s) => s.category === 'foundation')?.intensity || 75 }
-                : undefined,
-              eyeshadow: steps.find((s) => s.category === 'eyeshadow')?.colorHex
-                ? { color: steps.find((s) => s.category === 'eyeshadow')?.colorHex, intensity: steps.find((s) => s.category === 'eyeshadow')?.intensity || 65 }
-                : undefined,
-              eyebrow: steps.find((s) => s.category === 'eyebrow')?.colorHex
-                ? { color: steps.find((s) => s.category === 'eyebrow')?.colorHex, intensity: steps.find((s) => s.category === 'eyebrow')?.intensity || 70 }
-                : undefined,
-            },
-          },
-        ],
-      },
+    // Step 2: Build official v2.0 effects array
+    const effects = buildV2MakeupEffects(steps);
+
+    // Step 3: Run task on /s2s/v2.0/task/makeup-vto
+    const taskId = await runTask('/s2s/v2.0/task/makeup-vto', {
+      src_file_id: fileId,
+      version: '1.0',
+      effects,
     });
 
-    // Step 3: Poll task result
-    const rawResult: any = await pollTask('/s2s/v1.0/task/makeup-vto', taskId, {
+    // Step 4: Poll task result
+    const rawResult: any = await pollTask('/s2s/v2.0/task/makeup-vto', taskId, {
       timeoutMs: 40000,
     });
 
     const resultImageUrl =
+      rawResult?.results?.url ||
+      rawResult?.results?.[0]?.download_url ||
       rawResult?.resultImageUrl ||
       rawResult?.result_image_url ||
       rawResult?.file_url ||
-      rawResult?.url ||
-      rawResult?.results?.output_url ||
-      rawResult?.results?.files?.[0]?.url;
+      rawResult?.url;
 
     if (!resultImageUrl) {
       throw new Error('YouCam makeup VTO returned no output image URL.');
