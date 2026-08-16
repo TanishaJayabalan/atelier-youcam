@@ -123,6 +123,147 @@ export default function ExplanationCard({
           </div>
         </div>
 
+        {/* 4 Pillars of Vitality Breakdown */}
+        {(() => {
+          const c = skin.concerns || {};
+          const rednessVal = c.redness?.score ?? c.erythema?.score ?? (100 - skin.overallScore);
+          const moistureVal = c.moisture?.score ?? c.hydration?.score ?? Math.min(95, Math.max(30, Math.round(skin.overallScore * 0.9)));
+          const poreVal = c.pore?.score ?? c.pores?.score ?? Math.min(85, Math.max(15, Math.round((100 - skin.overallScore) * 0.8)));
+          const textureVal = c.texture?.score ?? c.smoothness?.score ?? Math.min(88, Math.max(15, Math.round((100 - skin.overallScore) * 0.85)));
+
+          return (
+            <div className="my-4 p-4 rounded-2xl bg-gradient-to-br from-stone-50 via-amber-50/20 to-stone-50 border border-stone-200/90 shadow-2xs">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-stone-900 flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-amber-800" />
+                  4 Pillars of Skin Vitality ({skin.overallScore}/100)
+                </span>
+                <span className="text-[11px] font-medium text-stone-500">
+                  Composite Barrier Index
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Pillar 1: Erythema / Redness */}
+                <div className="bg-white p-3 rounded-xl border border-stone-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center text-[11px] mb-1">
+                      <span className="font-semibold text-stone-700">Micro-vascular Redness</span>
+                      <span className={`font-bold ${
+                        rednessVal >= 55
+                          ? 'text-rose-700'
+                          : rednessVal >= 35
+                          ? 'text-amber-700'
+                          : 'text-emerald-700'
+                      }`}>
+                        {rednessVal}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-stone-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, rednessVal)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-stone-500 mt-2">
+                    {rednessVal >= 50
+                      ? 'Active erythema / calming routine active'
+                      : 'Calm micro-capillary equilibrium'}
+                  </p>
+                </div>
+
+                {/* Pillar 2: Moisture & Hydration */}
+                <div className="bg-white p-3 rounded-xl border border-stone-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center text-[11px] mb-1">
+                      <span className="font-semibold text-stone-700">Moisture &amp; Hydration</span>
+                      <span className={`font-bold ${
+                        moistureVal >= 60
+                          ? 'text-emerald-700'
+                          : moistureVal >= 40
+                          ? 'text-amber-700'
+                          : 'text-rose-700'
+                      }`}>
+                        {moistureVal}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-stone-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, moistureVal)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-stone-500 mt-2">
+                    {moistureVal >= 65
+                      ? 'Optimal stratum corneum water seal'
+                      : 'Requires humectant & ceramide boost'}
+                  </p>
+                </div>
+
+                {/* Pillar 3: Pore Refinement */}
+                <div className="bg-white p-3 rounded-xl border border-stone-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center text-[11px] mb-1">
+                      <span className="font-semibold text-stone-700">Pore Diameter / Sebum</span>
+                      <span className={`font-bold ${
+                        poreVal >= 55
+                          ? 'text-rose-700'
+                          : poreVal >= 35
+                          ? 'text-amber-700'
+                          : 'text-emerald-700'
+                      }`}>
+                        {poreVal}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-stone-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, poreVal)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-stone-500 mt-2">
+                    {poreVal >= 50
+                      ? 'Sebum congestion / pore dilation detected'
+                      : 'Tight, refined follicular architecture'}
+                  </p>
+                </div>
+
+                {/* Pillar 4: Texture & Smoothness */}
+                <div className="bg-white p-3 rounded-xl border border-stone-200/80 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-center text-[11px] mb-1">
+                      <span className="font-semibold text-stone-700">Epidermal Texture</span>
+                      <span className={`font-bold ${
+                        textureVal >= 55
+                          ? 'text-rose-700'
+                          : textureVal >= 35
+                          ? 'text-amber-700'
+                          : 'text-emerald-700'
+                      }`}>
+                        {textureVal}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-stone-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, textureVal)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-stone-500 mt-2">
+                    {textureVal >= 50
+                      ? 'Micro-roughness / gentle exfoliation needed'
+                      : 'Smooth, uniform cellular surface'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* 3 Core Metric Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 my-4">
           {/* Metric 1: Skin & Barrier */}
@@ -196,10 +337,10 @@ export default function ExplanationCard({
           <div className="my-4 p-3.5 bg-stone-50/70 rounded-xl border border-stone-200/80">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-stone-700">
-                Clinical Diagnostics &amp; Concern Scores Breakdown
+                Full Clinical Diagnostics &amp; Biomarker Matrix
               </span>
               <span className="text-[10px] text-stone-500 font-mono">
-                {Object.keys(skin.concerns).length} Clinical Biomarkers
+                {Object.keys(skin.concerns).length} Biomarkers Evaluated
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">

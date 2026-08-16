@@ -177,13 +177,13 @@ export async function analyzeImageOptically(imageBuffer: Buffer): Promise<{
 
   const palette = getHarmonizedPalette(season, undertone);
 
-  const normalizedRedness = Math.max(10, Math.min(90, Math.round((rednessSum / Math.max(1, count)) * 2.2)));
-  const normalizedTexture = Math.max(15, Math.min(85, Math.round(stdDev * 1.3)));
-  const normalizedOiliness = Math.max(15, Math.min(82, Math.round((avgG / 255) * 85)));
-  const normalizedMoisture = Math.max(35, Math.min(95, Math.round(lab.l * 0.95)));
-  const normalizedPores = Math.max(15, Math.min(80, Math.round(stdDev * 1.15)));
-  const normalizedRadiance = Math.max(25, Math.min(92, Math.round(lab.l * 0.88)));
-  const normalizedDarkCircles = Math.max(15, Math.min(75, Math.round((100 - lab.l) * 0.75)));
+  const normalizedRedness = Math.max(8, Math.min(92, Math.round((rednessSum / Math.max(1, count)) * 2.8)));
+  const normalizedTexture = Math.max(12, Math.min(88, Math.round(stdDev * 1.45)));
+  const normalizedOiliness = Math.max(15, Math.min(85, Math.round((avgG / 255) * 88)));
+  const normalizedMoisture = Math.max(30, Math.min(94, Math.round(lab.l * 0.92 + (255 - avgR) * 0.1)));
+  const normalizedPores = Math.max(14, Math.min(86, Math.round(stdDev * 1.35 + (avgR > 180 ? 8 : -4))));
+  const normalizedRadiance = Math.max(25, Math.min(95, Math.round(lab.l * 0.90 + (100 - stdDev) * 0.1)));
+  const normalizedDarkCircles = Math.max(15, Math.min(82, Math.round((100 - lab.l) * 0.82)));
   const normalizedFirmness = Math.max(50, Math.min(95, Math.round(100 - (100 - lab.l) * 0.35)));
 
   const concerns: Record<string, ConcernScore> = {
@@ -247,7 +247,13 @@ export async function analyzeImageOptically(imageBuffer: Buffer): Promise<{
   else if (normalizedRedness >= 45) skinType = 'sensitive';
   else if (normalizedOiliness >= 40 && normalizedMoisture >= 50) skinType = 'combination';
 
-  const overallScore = Math.max(45, Math.min(96, Math.round((normalizedMoisture * 0.35) + (normalizedRadiance * 0.35) + ((100 - normalizedRedness) * 0.15) + ((100 - normalizedTexture) * 0.15))));
+  // Compute overall vitality dynamically from the 4 primary pillar scores
+  const overallScore = Math.max(35, Math.min(96, Math.round(
+    ((100 - normalizedRedness) * 0.25) +
+    (normalizedMoisture * 0.30) +
+    ((100 - normalizedPores) * 0.25) +
+    ((100 - normalizedTexture) * 0.20)
+  )));
 
   const skinAnalysis: SkinAnalysisResult = {
     skinType,
