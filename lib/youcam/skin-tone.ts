@@ -1,6 +1,6 @@
 import { uploadFile, runTask, pollTask } from './client';
 
-export type Undertone = 'warm' | 'cool' | 'neutral';
+export type Undertone = 'warm' | 'cool' | 'neutral' | 'olive';
 export type SeasonalPalette = 'Spring' | 'Summer' | 'Autumn' | 'Winter';
 
 export interface SkinTonePalette {
@@ -32,6 +32,7 @@ export interface SkinToneResult {
   lip_color?: string;
   eyebrow_color?: string;
   eyebrowColorHex?: string;
+  fitzpatrick?: any;
   rawResponse?: any;
 }
 

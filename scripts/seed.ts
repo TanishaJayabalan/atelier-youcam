@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 import { getSupabaseServerClient, ClosetItem } from '../lib/supabase';
 

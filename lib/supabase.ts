@@ -16,6 +16,12 @@ export interface OutfitMetadata {
   color_hex?: string;
   weather_tags: string[]; // e.g. ['hot', 'warm', 'rain', 'cool', 'cold']
   fabric?: string;
+  skin_tone_tags?: ('warm' | 'cool' | 'neutral' | 'olive' | string)[];
+  fitzpatrick_range?: ('I' | 'II' | 'III' | 'IV' | 'V' | 'VI' | string)[];
+  season_tags?: ('Spring' | 'Summer' | 'Autumn' | 'Winter' | string)[];
+  skin_concern_tags?: string[];
+  uv_protection_factor?: number;
+  garment_category?: 'upper_body' | 'lower_body' | 'full_body' | 'outerwear' | 'shoes' | 'auto';
 }
 
 export interface MakeupMetadata {
@@ -24,13 +30,16 @@ export interface MakeupMetadata {
   shade_name?: string;
   finish: 'matte' | 'dewy' | 'satin' | 'glossy' | 'shimmer';
   coverage?: 'sheer' | 'medium' | 'full';
+  undertone_compatibility?: ('warm' | 'cool' | 'neutral' | 'olive')[];
+  fitzpatrick_range?: ('I' | 'II' | 'III' | 'IV' | 'V' | 'VI')[];
 }
 
 export interface SkincareMetadata {
   step_category: 'cleanser' | 'toner' | 'serum' | 'moisturizer' | 'spf' | 'treatment' | 'mask';
-  active_ingredients: string[]; // e.g. ['retinol', 'niacinamide', 'hyaluronic_acid', 'salicylic_acid', 'ceramides', 'zinc_oxide']
+  active_ingredients: string[]; // e.g. ['retinol', 'niacinamide', 'hyaluronic_acid', 'salicylic_acid', 'ceramides', 'zinc_oxide', 'peptides', 'tranexamic_acid', 'copper_tripeptide', 'azelaic_acid', 'alpha_arbutin']
   timing: 'AM' | 'PM' | 'both';
-  texture?: 'gel' | 'cream' | 'fluid' | 'oil';
+  texture?: 'gel' | 'cream' | 'fluid' | 'oil' | 'foam';
+  target_concerns?: ('acne' | 'redness' | 'pores' | 'texture' | 'hydration' | 'firmness' | 'dark_circles' | 'oiliness' | 'tan' | 'wrinkles' | 'elasticity')[];
 }
 
 export type ClosetMetadata = OutfitMetadata | MakeupMetadata | SkincareMetadata | Record<string, any>;

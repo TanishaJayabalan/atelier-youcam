@@ -11,7 +11,11 @@
       "color": "Ivory Cream",
       "color_hex": "#FDFBF7",
       "weather_tags": ["warm", "cool"],
-      "fabric": "100% Silk"
+      "fabric": "100% Mulberry Silk",
+      "skin_tone_tags": ["warm", "neutral"],
+      "fitzpatrick_range": ["II", "III", "IV", "V"],
+      "season_tags": ["Spring", "Autumn"],
+      "garment_category": "upper_body"
     }
   },
   {
@@ -26,7 +30,12 @@
       "color": "Sage Olive",
       "color_hex": "#708238",
       "weather_tags": ["hot", "warm"],
-      "fabric": "Pure Linen"
+      "fabric": "Pure Breathable Linen",
+      "skin_tone_tags": ["olive", "warm", "neutral"],
+      "fitzpatrick_range": ["III", "IV", "V", "VI"],
+      "season_tags": ["Autumn", "Spring"],
+      "uv_protection_factor": 30,
+      "garment_category": "upper_body"
     }
   },
   {
@@ -41,7 +50,183 @@
       "color": "Onyx Black",
       "color_hex": "#1B1B1B",
       "weather_tags": ["warm", "cool"],
-      "fabric": "Ribbed Matte Jersey"
+      "fabric": "Ribbed Matte Jersey",
+      "skin_tone_tags": ["cool", "neutral", "warm", "olive"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Autumn"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_4",
+    "category": "outfit_top",
+    "name": "Electric Cobalt Satin Camisole",
+    "brand": "Cuyana",
+    "image_url": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Cobalt Royal Blue",
+      "color_hex": "#0047AB",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Lustrous Silk Satin",
+      "skin_tone_tags": ["cool", "neutral"],
+      "fitzpatrick_range": ["I", "II", "V", "VI"],
+      "season_tags": ["Winter", "Summer"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_5",
+    "category": "outfit_top",
+    "name": "Ribbed Cashmere Mock-Neck Knit",
+    "brand": "Toteme",
+    "image_url": "https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Warm Terracotta Camel",
+      "color_hex": "#C19A6B",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "100% Grade-A Cashmere",
+      "skin_tone_tags": ["warm", "olive"],
+      "fitzpatrick_range": ["II", "III", "IV", "V"],
+      "season_tags": ["Autumn", "Spring"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_6",
+    "category": "outfit_top",
+    "name": "Dusty Rose Romantic Wrap Top",
+    "brand": "Sezane",
+    "image_url": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Dusty Rose Mauve",
+      "color_hex": "#D8A1A9",
+      "weather_tags": ["warm", "cool"],
+      "fabric": "Georgette Chiffon",
+      "skin_tone_tags": ["cool", "neutral"],
+      "fitzpatrick_range": ["I", "II", "III"],
+      "season_tags": ["Summer", "Spring"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_7",
+    "category": "outfit_top",
+    "name": "UV-Block Tropical Air-Linen Tunic",
+    "brand": "Patagonia",
+    "image_url": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Pure Alabaster White",
+      "color_hex": "#FFFFFF",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "UPF 50+ Certified Organic Linen",
+      "skin_tone_tags": ["cool", "neutral", "warm", "olive"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Summer", "Spring", "Winter"],
+      "uv_protection_factor": 50,
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_8",
+    "category": "outfit_top",
+    "name": "Rich Mustard Gold Silk Blouse",
+    "brand": "Nanushka",
+    "image_url": "https://images.unsplash.com/photo-1564257631407-4deb1f99d992?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Rich Mustard Gold",
+      "color_hex": "#E1AD01",
+      "weather_tags": ["warm", "cool"],
+      "fabric": "Glossy Habotai Silk",
+      "skin_tone_tags": ["warm", "olive"],
+      "fitzpatrick_range": ["IV", "V", "VI"],
+      "season_tags": ["Autumn", "Spring"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_9",
+    "category": "outfit_top",
+    "name": "Crisp Ice Blue Poplin Button-Down",
+    "brand": "Theory",
+    "image_url": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Crisp Ice Blue",
+      "color_hex": "#D4E6F1",
+      "weather_tags": ["hot", "warm", "cool"],
+      "fabric": "Egyptian Cotton Poplin",
+      "skin_tone_tags": ["cool", "neutral"],
+      "fitzpatrick_range": ["I", "II", "III"],
+      "season_tags": ["Summer", "Winter"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_10",
+    "category": "outfit_top",
+    "name": "Deep Plum Velvet Bodice Top",
+    "brand": "Reiss",
+    "image_url": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Royal Plum Wine",
+      "color_hex": "#581845",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "Plush Stretch Velvet",
+      "skin_tone_tags": ["cool", "neutral", "warm"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Autumn"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_11",
+    "category": "outfit_top",
+    "name": "Sunlit Amber Ribbed Polo Top",
+    "brand": "Dries Van Noten",
+    "image_url": "https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Warm Saffron Amber",
+      "color_hex": "#FFBF00",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Lightweight Cotton-Silk Rib",
+      "skin_tone_tags": ["warm", "olive"],
+      "fitzpatrick_range": ["III", "IV", "V", "VI"],
+      "season_tags": ["Spring", "Autumn"],
+      "garment_category": "upper_body"
+    }
+  },
+  {
+    "id": "closet_top_12",
+    "category": "outfit_top",
+    "name": "Ethereal Lavender Organza Blouse",
+    "brand": "Zimmermann",
+    "image_url": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Soft Pastel Lavender",
+      "color_hex": "#E6E6FA",
+      "weather_tags": ["warm", "hot"],
+      "fabric": "Silk Organza",
+      "skin_tone_tags": ["cool", "neutral"],
+      "fitzpatrick_range": ["I", "II", "V", "VI"],
+      "season_tags": ["Summer", "Spring"],
+      "garment_category": "upper_body"
     }
   },
   {
@@ -56,7 +241,11 @@
       "color": "Warm Camel",
       "color_hex": "#C19A6B",
       "weather_tags": ["warm", "cool", "cold"],
-      "fabric": "Wool-Blend Twill"
+      "fabric": "Wool-Blend Twill",
+      "skin_tone_tags": ["warm", "neutral", "olive"],
+      "fitzpatrick_range": ["II", "III", "IV", "V"],
+      "season_tags": ["Autumn", "Spring"],
+      "garment_category": "lower_body"
     }
   },
   {
@@ -71,7 +260,106 @@
       "color": "Indigo Blue",
       "color_hex": "#264366",
       "weather_tags": ["cool", "cold", "rain", "warm"],
-      "fabric": "Rigid Organic Cotton"
+      "fabric": "Rigid Organic Cotton",
+      "skin_tone_tags": ["cool", "neutral", "warm", "olive"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Autumn", "Spring", "Summer"],
+      "garment_category": "lower_body"
+    }
+  },
+  {
+    "id": "closet_bottom_3",
+    "category": "outfit_bottom",
+    "name": "Tailored High-Waist Ivory Slacks",
+    "brand": "The Frankie Shop",
+    "image_url": "https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Soft Ivory",
+      "color_hex": "#F8F6F0",
+      "weather_tags": ["hot", "warm", "cool"],
+      "fabric": "Fluid Crepe",
+      "skin_tone_tags": ["warm", "neutral", "olive"],
+      "fitzpatrick_range": ["III", "IV", "V", "VI"],
+      "season_tags": ["Spring", "Summer", "Autumn"],
+      "garment_category": "lower_body"
+    }
+  },
+  {
+    "id": "closet_bottom_4",
+    "category": "outfit_bottom",
+    "name": "Liquid Satin Bias-Cut Midi Skirt",
+    "brand": "Vince",
+    "image_url": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Champagne Bronze",
+      "color_hex": "#B8977E",
+      "weather_tags": ["warm", "hot"],
+      "fabric": "Heavyweight Silk Satin",
+      "skin_tone_tags": ["warm", "neutral"],
+      "fitzpatrick_range": ["II", "III", "IV", "V"],
+      "season_tags": ["Autumn", "Spring"],
+      "garment_category": "lower_body"
+    }
+  },
+  {
+    "id": "closet_bottom_5",
+    "category": "outfit_bottom",
+    "name": "Minimalist Charcoal Wool Trousers",
+    "brand": "Arket",
+    "image_url": "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Deep Slate Charcoal",
+      "color_hex": "#363636",
+      "weather_tags": ["cool", "cold", "rain"],
+      "fabric": "Italian Worsted Wool",
+      "skin_tone_tags": ["cool", "neutral"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Summer"],
+      "garment_category": "lower_body"
+    }
+  },
+  {
+    "id": "closet_bottom_6",
+    "category": "outfit_bottom",
+    "name": "Structured Leather Straight-Leg Pants",
+    "brand": "Stand Studio",
+    "image_url": "https://images.unsplash.com/photo-1551803091-e20673f15770?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Obsidian Black",
+      "color_hex": "#151515",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "Supple Vegan Leather",
+      "skin_tone_tags": ["cool", "neutral", "warm", "olive"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Autumn"],
+      "garment_category": "lower_body"
+    }
+  },
+  {
+    "id": "closet_bottom_7",
+    "category": "outfit_bottom",
+    "name": "Airy Linen Wide-Leg Drawstring Pant",
+    "brand": "Deiji Studios",
+    "image_url": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Oatmeal Linen",
+      "color_hex": "#E3DAC9",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "100% Stonewashed French Linen",
+      "skin_tone_tags": ["warm", "neutral", "olive"],
+      "fitzpatrick_range": ["II", "III", "IV", "V"],
+      "season_tags": ["Summer", "Spring"],
+      "garment_category": "lower_body"
     }
   },
   {
@@ -86,7 +374,11 @@
       "color": "Emerald Jewel",
       "color_hex": "#097969",
       "weather_tags": ["hot", "warm"],
-      "fabric": "Gloss Satin"
+      "fabric": "Gloss Satin",
+      "skin_tone_tags": ["cool", "neutral", "olive"],
+      "fitzpatrick_range": ["I", "II", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Summer"],
+      "garment_category": "full_body"
     }
   },
   {
@@ -101,7 +393,11 @@
       "color": "Magenta Plum",
       "color_hex": "#8E2800",
       "weather_tags": ["warm", "hot"],
-      "fabric": "Structured Knit"
+      "fabric": "Structured Rib Knit",
+      "skin_tone_tags": ["warm", "neutral"],
+      "fitzpatrick_range": ["III", "IV", "V", "VI"],
+      "season_tags": ["Autumn", "Winter"],
+      "garment_category": "full_body"
     }
   },
   {
@@ -113,10 +409,91 @@
     "is_owned": true,
     "metadata": {
       "formality_tag": "casual",
-      "color": "Butter Yellow",
+      "color": "Butter Warm Yellow",
       "color_hex": "#FFFDD0",
       "weather_tags": ["hot", "warm"],
-      "fabric": "Crisp Cotton Poplin"
+      "fabric": "Crisp Cotton Poplin",
+      "skin_tone_tags": ["warm", "olive"],
+      "fitzpatrick_range": ["II", "III", "IV", "V"],
+      "season_tags": ["Spring", "Summer"],
+      "uv_protection_factor": 30,
+      "garment_category": "full_body"
+    }
+  },
+  {
+    "id": "closet_dress_4",
+    "category": "outfit_dress",
+    "name": "Royal Cobalt Wrap Maxi Dress",
+    "brand": "Diane von Furstenberg",
+    "image_url": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Vibrant Sapphire Blue",
+      "color_hex": "#0F52BA",
+      "weather_tags": ["warm", "hot", "cool"],
+      "fabric": "Silk Jersey",
+      "skin_tone_tags": ["cool", "neutral"],
+      "fitzpatrick_range": ["I", "II", "V", "VI"],
+      "season_tags": ["Winter", "Summer"],
+      "garment_category": "full_body"
+    }
+  },
+  {
+    "id": "closet_dress_5",
+    "category": "outfit_dress",
+    "name": "Sun-Drenched Terracotta Linen Midi",
+    "brand": "Posse",
+    "image_url": "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "natural",
+      "color": "Spiced Terracotta",
+      "color_hex": "#CC4E33",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "100% Belgian Linen",
+      "skin_tone_tags": ["warm", "olive"],
+      "fitzpatrick_range": ["III", "IV", "V", "VI"],
+      "season_tags": ["Autumn", "Spring"],
+      "garment_category": "full_body"
+    }
+  },
+  {
+    "id": "closet_dress_6",
+    "category": "outfit_dress",
+    "name": "Velvet Midnight Cocktail Dress",
+    "brand": "Galvan London",
+    "image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Deep Wine Burgundy",
+      "color_hex": "#4A0E17",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "Silk Velvet",
+      "skin_tone_tags": ["cool", "warm", "neutral"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Autumn"],
+      "garment_category": "full_body"
+    }
+  },
+  {
+    "id": "closet_dress_7",
+    "category": "outfit_dress",
+    "name": "Dusty Rose Bias-Cut Slip Gown",
+    "brand": "Rat & Boa",
+    "image_url": "https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Dusty Rose Quartz",
+      "color_hex": "#C98A97",
+      "weather_tags": ["warm", "hot"],
+      "fabric": "100% Silk Georgette",
+      "skin_tone_tags": ["cool", "neutral"],
+      "fitzpatrick_range": ["I", "II", "III"],
+      "season_tags": ["Summer", "Spring"],
+      "garment_category": "full_body"
     }
   },
   {
@@ -131,7 +508,11 @@
       "color": "Espresso Brown",
       "color_hex": "#3D2B1F",
       "weather_tags": ["cool", "cold"],
-      "fabric": "100% Virgin Wool"
+      "fabric": "100% Virgin Wool",
+      "skin_tone_tags": ["warm", "neutral", "olive"],
+      "fitzpatrick_range": ["II", "III", "IV", "V", "VI"],
+      "season_tags": ["Autumn", "Winter"],
+      "garment_category": "outerwear"
     }
   },
   {
@@ -146,22 +527,66 @@
       "color": "Sandstone Khaki",
       "color_hex": "#D2B48C",
       "weather_tags": ["rain", "cool", "cold"],
-      "fabric": "Treated Cotton Gabardine"
+      "fabric": "Treated Cotton Gabardine",
+      "skin_tone_tags": ["warm", "neutral"],
+      "fitzpatrick_range": ["I", "II", "III", "IV"],
+      "season_tags": ["Spring", "Autumn"],
+      "garment_category": "outerwear"
+    }
+  },
+  {
+    "id": "closet_outer_3",
+    "category": "outfit_outer",
+    "name": "Sculpted Nappa Leather Moto Jacket",
+    "brand": "Acne Studios",
+    "image_url": "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Midnight Black",
+      "color_hex": "#111111",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "100% Lambskin Nappa",
+      "skin_tone_tags": ["cool", "neutral", "warm", "olive"],
+      "fitzpatrick_range": ["I", "II", "III", "IV", "V", "VI"],
+      "season_tags": ["Winter", "Autumn"],
+      "garment_category": "outerwear"
+    }
+  },
+  {
+    "id": "closet_outer_4",
+    "category": "outfit_outer",
+    "name": "Belted Double-Face Cashmere Robe Coat",
+    "brand": "Max Mara",
+    "image_url": "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Golden Camel",
+      "color_hex": "#B58A58",
+      "weather_tags": ["cold", "cool"],
+      "fabric": "100% Hand-Stitched Cashmere",
+      "skin_tone_tags": ["warm", "neutral", "olive"],
+      "fitzpatrick_range": ["II", "III", "IV", "V"],
+      "season_tags": ["Autumn", "Spring"],
+      "garment_category": "outerwear"
     }
   },
   {
     "id": "closet_makeup_1",
     "category": "makeup",
-    "name": "Luminous Silk Foundation",
+    "name": "Luminous Silk Foundation (5.75 Warm Medium)",
     "brand": "Armani Beauty",
     "image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
     "is_owned": true,
     "metadata": {
       "product_category": "foundation",
       "shade_hex": "#DFAC82",
-      "shade_name": "5.75 Warm Medium",
+      "shade_name": "5.75 Warm Medium Golden",
       "finish": "dewy",
-      "coverage": "medium"
+      "coverage": "medium",
+      "undertone_compatibility": ["warm", "neutral"],
+      "fitzpatrick_range": ["III", "IV"]
     }
   },
   {
@@ -235,6 +660,65 @@
     }
   },
   {
+    "id": "closet_makeup_7",
+    "category": "makeup",
+    "name": "Retro Matte Lipstick (Ruby Woo)",
+    "brand": "MAC Cosmetics",
+    "image_url": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "lip",
+      "shade_hex": "#960018",
+      "shade_name": "Iconic Vivid Blue-Red",
+      "finish": "matte"
+    }
+  },
+  {
+    "id": "closet_makeup_8",
+    "category": "makeup",
+    "name": "Cheeks Out Freestyle Cream Blush (Drama Cla$$)",
+    "brand": "Fenty Beauty",
+    "image_url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "blush",
+      "shade_hex": "#944273",
+      "shade_name": "Soft Vivid Berry",
+      "finish": "dewy"
+    }
+  },
+  {
+    "id": "closet_makeup_9",
+    "category": "makeup",
+    "name": "Pro Filt'r Soft Matte Longwear Foundation (420 Deep Neutral)",
+    "brand": "Fenty Beauty",
+    "image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "foundation",
+      "shade_hex": "#6C4230",
+      "shade_name": "420 Deep Rich Bronze",
+      "finish": "matte",
+      "coverage": "full",
+      "undertone_compatibility": ["neutral", "warm"],
+      "fitzpatrick_range": ["V", "VI"]
+    }
+  },
+  {
+    "id": "closet_makeup_10",
+    "category": "makeup",
+    "name": "Posh Lipstick (Fringe Deep Chestnut)",
+    "brand": "Victoria Beckham Beauty",
+    "image_url": "https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "product_category": "lip",
+      "shade_hex": "#8B4B3E",
+      "shade_name": "Warm Spiced Chestnut",
+      "finish": "satin"
+    }
+  },
+  {
     "id": "closet_skincare_1",
     "category": "skincare",
     "name": "Gentle Barrier Hydrating Cleanser",
@@ -245,7 +729,8 @@
       "step_category": "cleanser",
       "active_ingredients": ["ceramides", "hyaluronic_acid"],
       "timing": "both",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["hydration", "redness"]
     }
   },
   {
@@ -259,7 +744,8 @@
       "step_category": "serum",
       "active_ingredients": ["retinol", "bisabolol"],
       "timing": "PM",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["wrinkles", "texture", "firmness"]
     }
   },
   {
@@ -273,7 +759,8 @@
       "step_category": "treatment",
       "active_ingredients": ["centella_asiatica", "madecassoside"],
       "timing": "both",
-      "texture": "gel"
+      "texture": "gel",
+      "target_concerns": ["redness"]
     }
   },
   {
@@ -287,7 +774,8 @@
       "step_category": "moisturizer",
       "active_ingredients": ["ceramides", "peptides", "squalane"],
       "timing": "both",
-      "texture": "cream"
+      "texture": "cream",
+      "target_concerns": ["hydration", "firmness", "redness"]
     }
   },
   {
@@ -301,7 +789,8 @@
       "step_category": "spf",
       "active_ingredients": ["zinc_oxide", "vitamin_e"],
       "timing": "AM",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["tan"]
     }
   },
   {
@@ -315,7 +804,8 @@
       "step_category": "treatment",
       "active_ingredients": ["salicylic_acid", "green_tea"],
       "timing": "PM",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["acne", "pores", "texture"]
     }
   },
   {
@@ -329,7 +819,8 @@
       "step_category": "serum",
       "active_ingredients": ["niacinamide", "zinc_pca"],
       "timing": "both",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["acne", "oiliness", "pores"]
     }
   },
   {
@@ -343,7 +834,8 @@
       "step_category": "serum",
       "active_ingredients": ["hyaluronic_acid", "polyglutamic_acid"],
       "timing": "both",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["hydration"]
     }
   },
   {
@@ -357,7 +849,8 @@
       "step_category": "serum",
       "active_ingredients": ["vitamin_c", "phytosterols"],
       "timing": "AM",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["tan", "texture"]
     }
   },
   {
@@ -371,7 +864,8 @@
       "step_category": "treatment",
       "active_ingredients": ["caffeine", "egcg"],
       "timing": "both",
-      "texture": "fluid"
+      "texture": "fluid",
+      "target_concerns": ["dark_circles"]
     }
   },
   {
@@ -385,7 +879,8 @@
       "step_category": "cleanser",
       "active_ingredients": ["zinc_pca", "salicylic_acid"],
       "timing": "both",
-      "texture": "foam"
+      "texture": "foam",
+      "target_concerns": ["oiliness", "acne"]
     }
   },
   {
@@ -399,7 +894,128 @@
       "step_category": "moisturizer",
       "active_ingredients": ["hyaluronic_acid", "glycerin"],
       "timing": "both",
-      "texture": "gel"
+      "texture": "gel",
+      "target_concerns": ["hydration", "oiliness"]
+    }
+  },
+  {
+    "id": "closet_skincare_13",
+    "category": "skincare",
+    "name": "Alpha Arbutin 2% + HA Dark Spot Corrector",
+    "brand": "The Ordinary",
+    "image_url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["alpha_arbutin", "hyaluronic_acid"],
+      "timing": "both",
+      "texture": "fluid",
+      "target_concerns": ["tan", "texture"]
+    }
+  },
+  {
+    "id": "closet_skincare_14",
+    "category": "skincare",
+    "name": "Rapid Dark Spot Correcting Tranexamic Serum",
+    "brand": "Murad",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["tranexamic_acid", "glycolic_acid", "niacinamide"],
+      "timing": "both",
+      "texture": "fluid",
+      "target_concerns": ["tan", "texture"]
+    }
+  },
+  {
+    "id": "closet_skincare_15",
+    "category": "skincare",
+    "name": "Multi-Peptide + Copper Peptide 1% Serum",
+    "brand": "The Ordinary",
+    "image_url": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["copper_tripeptide", "matrixyl_3000", "argireline"],
+      "timing": "both",
+      "texture": "fluid",
+      "target_concerns": ["firmness", "elasticity", "wrinkles"]
+    }
+  },
+  {
+    "id": "closet_skincare_16",
+    "category": "skincare",
+    "name": "Pore-Clearing Azelaic Acid 10% Suspension",
+    "brand": "Paula's Choice",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "treatment",
+      "active_ingredients": ["azelaic_acid", "salicylic_acid"],
+      "timing": "both",
+      "texture": "gel",
+      "target_concerns": ["pores", "redness", "acne"]
+    }
+  },
+  {
+    "id": "closet_skincare_17",
+    "category": "skincare",
+    "name": "Cicaplast Baume B5+ Ultra-Repairing Balm",
+    "brand": "La Roche-Posay",
+    "image_url": "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "treatment",
+      "active_ingredients": ["panthenol_b5", "madecassoside", "zinc_manganese"],
+      "timing": "PM",
+      "texture": "cream",
+      "target_concerns": ["redness", "hydration"]
+    }
+  },
+  {
+    "id": "closet_skincare_18",
+    "category": "skincare",
+    "name": "Polyglutamic Acid Dewy Barrier Serum",
+    "brand": "The INKEY List",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "serum",
+      "active_ingredients": ["polyglutamic_acid", "glycerin"],
+      "timing": "both",
+      "texture": "fluid",
+      "target_concerns": ["hydration"]
+    }
+  },
+  {
+    "id": "closet_skincare_19",
+    "category": "skincare",
+    "name": "AHA 30% + BHA 2% Peeling Solution",
+    "brand": "The Ordinary",
+    "image_url": "https://images.unsplash.com/photo-1608248597359-5980a373b9e4?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "treatment",
+      "active_ingredients": ["glycolic_acid", "lactic_acid", "salicylic_acid"],
+      "timing": "PM",
+      "texture": "fluid",
+      "target_concerns": ["texture", "pores"]
+    }
+  },
+  {
+    "id": "closet_skincare_20",
+    "category": "skincare",
+    "name": "Unseen Broad-Spectrum SPF 40 Invisible Gel",
+    "brand": "Supergoop!",
+    "image_url": "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "step_category": "spf",
+      "active_ingredients": ["avobenzone", "homosalate", "octisalate"],
+      "timing": "AM",
+      "texture": "gel",
+      "target_concerns": ["tan"]
     }
   }
 ]
