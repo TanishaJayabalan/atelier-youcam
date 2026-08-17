@@ -282,6 +282,30 @@ function MirrorCheckContent() {
     }
   };
 
+  const [customClosetGarment, setCustomClosetGarment] = useState<any | null>(null);
+
+  const handleTryOnClosetItem = async (item: any) => {
+    const meta = item.metadata as any;
+    const garment = {
+      name: item.name,
+      category: item.category,
+      description: `${item.brand ? item.brand + ' ' : ''}${item.name}`,
+      imageUrl: item.image_url,
+      hexColor: meta?.color_hex || '#2C2C2C',
+      fabric: meta?.fabric,
+    };
+    setCustomClosetGarment(garment);
+    setActiveTab('wardrobe');
+
+    const bodyPhoto = selectedBodyPhoto || selectedSelfie || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&h=900&q=80';
+    if (!selectedBodyPhoto) {
+      setSelectedBodyPhoto(bodyPhoto);
+    }
+
+    await handleTryOnOutfit(bodyPhoto, [garment]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const scrollToSection = (id: string) => {
     setActiveTab(id);
   };
@@ -731,12 +755,20 @@ function MirrorCheckContent() {
                       outfitError={outfitError}
                       isRendering={isRenderingOutfit}
                       initialBodyPhoto={selectedBodyPhoto}
+                      customGarment={customClosetGarment}
+                      onClearCustomGarment={() => setCustomClosetGarment(null)}
                       onTryOnOutfit={handleTryOnOutfit}
                     />
                     <div className="bg-white rounded-3xl border border-[#E8E2D9] shadow-sm overflow-hidden p-6">
-                      <h3 className="text-xl font-serif text-[#2C2C2C] mb-6">Wardrobe Vault</h3>
+                      <div className="mb-4">
+                        <h3 className="text-xl font-serif text-[#2C2C2C]">Wardrobe Vault</h3>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          Click &quot;✨ Try On Garment&quot; on any piece from your closet to fit it onto your body silhouette.
+                        </p>
+                      </div>
                       <ClosetShelf
                         beautyProfile={beautyProfile || undefined}
+                        onTryOnItem={handleTryOnClosetItem}
                         onApplyGeneratedLook={(effects) => {
                           if (effects && effects.length > 0) {
                             console.log('Applied generated look effects:', effects);

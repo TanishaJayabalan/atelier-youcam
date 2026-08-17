@@ -26,9 +26,10 @@ interface ClosetShelfProps {
   onItemsUpdated?: () => void;
   beautyProfile?: UserBeautyProfile;
   onApplyGeneratedLook?: (effects: any[]) => void;
+  onTryOnItem?: (item: ClosetItem) => void;
 }
 
-export default function ClosetShelf({ onItemsUpdated, beautyProfile, onApplyGeneratedLook }: ClosetShelfProps) {
+export default function ClosetShelf({ onItemsUpdated, beautyProfile, onApplyGeneratedLook, onTryOnItem }: ClosetShelfProps) {
   const { addToCart } = useCart();
   const [items, setItems] = useState<ClosetItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -354,13 +355,30 @@ export default function ClosetShelf({ onItemsUpdated, beautyProfile, onApplyGene
                 }`}
               >
                 {/* Product Image */}
-                <div className="relative rounded-lg overflow-hidden aspect-square bg-stone-200 mb-2">
+                <div 
+                  className={`relative rounded-lg overflow-hidden aspect-square bg-stone-200 mb-2 ${
+                    item.category.startsWith('outfit_') && onTryOnItem ? 'cursor-pointer' : ''
+                  }`}
+                  onClick={() => {
+                    if (item.category.startsWith('outfit_') && onTryOnItem) {
+                      onTryOnItem(item);
+                    }
+                  }}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.image_url}
                     alt={item.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
+                  {item.category.startsWith('outfit_') && onTryOnItem && (
+                    <div className="absolute inset-0 bg-[#2C2C2C]/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-white bg-[#694A33] px-2 py-1 rounded-full shadow-sm flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-[#D9CDB8]" />
+                        Try On
+                      </span>
+                    </div>
+                  )}
                   {meta?.color_hex && (
                     <span
                       className="absolute bottom-1.5 right-1.5 w-4 h-4 rounded-full border-2 border-white shadow-xs"
@@ -413,6 +431,17 @@ export default function ClosetShelf({ onItemsUpdated, beautyProfile, onApplyGene
 
                 {/* Action Buttons */}
                 <div className="mt-2.5 space-y-1">
+                  {item.category.startsWith('outfit_') && onTryOnItem && (
+                    <button
+                      type="button"
+                      onClick={() => onTryOnItem(item)}
+                      className="w-full py-1 px-2 rounded-lg text-[10px] font-bold text-white bg-[#694A33] hover:bg-[#523926] flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                    >
+                      <Sparkles className="w-3 h-3 text-[#D9CDB8]" />
+                      ✨ Try On Garment
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => toggleOwned(item)}

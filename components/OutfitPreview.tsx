@@ -25,6 +25,8 @@ interface OutfitPreviewProps {
   outfitError?: string | null;
   isRendering: boolean;
   initialBodyPhoto?: string | null;
+  customGarment?: any | null;
+  onClearCustomGarment?: () => void;
   onTryOnOutfit?: (bodyPhotoBase64: string, outfitItems: any[]) => Promise<void>;
   onRetry?: () => void;
 }
@@ -53,6 +55,8 @@ export default function OutfitPreview({
   outfitError,
   isRendering,
   initialBodyPhoto,
+  customGarment,
+  onClearCustomGarment,
   onTryOnOutfit,
   onRetry,
 }: OutfitPreviewProps) {
@@ -72,6 +76,9 @@ export default function OutfitPreview({
   const isStartingRef = useRef(false);
 
   const getGarmentsToTryOn = () => {
+    if (customGarment) {
+      return [customGarment];
+    }
     if (selectedPieceMode === 'top' && topOrDress) return [topOrDress];
     if (selectedPieceMode === 'bottom' && bottom) return [bottom];
     if (selectedPieceMode === 'outerwear' && outerwear) return [outerwear];
@@ -251,6 +258,40 @@ export default function OutfitPreview({
             </button>
           )}
         </div>
+
+        {/* Custom Selected Closet Item Indicator */}
+        {customGarment && (
+          <div className="mb-4 p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between gap-3 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-amber-200 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={customGarment.imageUrl || customGarment.image_url}
+                  alt={customGarment.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-amber-900 tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-700" />
+                  Selected From Your Closet
+                </span>
+                <p className="text-xs font-semibold text-stone-900">
+                  {customGarment.name}
+                </p>
+              </div>
+            </div>
+            {onClearCustomGarment && (
+              <button
+                type="button"
+                onClick={onClearCustomGarment}
+                className="text-[11px] font-semibold text-[#694A33] hover:text-[#523926] underline cursor-pointer"
+              >
+                Reset to AI Look
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Dedicated Full-Body Photo Input Area when not rendered or when changing */}
         {!renderedImageUrl && !isRendering && (
