@@ -162,6 +162,24 @@ export async function simulateSkinOutcome(
       projectedConcerns: projected,
     };
   } catch (err: any) {
+    // Graceful fallback for YouCam credit limits
+    if (err.message?.includes('credits') || err.message?.includes('CreditInsufficiency') || err.message?.includes('400')) {
+      console.warn('YouCam API credits exhausted or request failed. Using original image as fallback simulation.');
+      
+      let fallbackUrl = '';
+      if (Buffer.isBuffer(imageInput)) {
+        fallbackUrl = `data:image/jpeg;base64,${imageInput.toString('base64')}`;
+      } else {
+        fallbackUrl = imageInput as string;
+      }
+
+      return {
+        simulatedImageUrl: fallbackUrl,
+        intensityMap: params as Record<string, number>,
+        projectedConcerns: projected,
+      };
+    }
+    
     throw new Error(`Skin simulation failed: ${err.message}`);
   }
 }

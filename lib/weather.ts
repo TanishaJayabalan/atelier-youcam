@@ -109,13 +109,18 @@ export async function fetchWeather(lat: number, lon: number, cityName?: string):
 
   const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Open-Meteo Weather API failed [HTTP ${res.status}]`);
+  let current: any = {};
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) {
+      console.warn(`Open-Meteo Weather API failed [HTTP ${res.status}], falling back to default weather metrics.`);
+    } else {
+      const data = await res.json();
+      current = data.current || {};
+    }
+  } catch (err: any) {
+    console.warn(`Open-Meteo Weather API error (${err.message}), falling back to default weather metrics.`);
   }
-
-  const data = await res.json();
-  const current = data.current || {};
 
   const tempC = Math.round((current.temperature_2m ?? 22) * 10) / 10;
   const tempF = Math.round(((tempC * 9) / 5 + 32) * 10) / 10;

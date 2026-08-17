@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
       lat,
       lon,
       city,
+      mode,
     } = body;
 
     if (!selfieBase64) {
@@ -64,30 +65,40 @@ export async function POST(req: NextRequest) {
     let engineSource = 'youcam_ai';
     let engineNotice: string | undefined;
 
-    try {
-      console.log('[Analyze Route]: Attempting live YouCam S2S AI analysis...');
-      const [bpRes, stRes] = await Promise.all([
-        analyzeParallelBeautyProfile(selfieBuffer),
-        analyzeSkinTone(selfieBuffer, contentType),
-      ]);
-      beautyProfile = bpRes;
-      skinTone = stRes;
-      skinAnalysis = beautyProfile.skin;
-      console.log('✓ Live YouCam AI Analysis succeeded');
-    } catch (youcamErr: any) {
-      console.warn('[Analyze Route]: Live YouCam AI returned:', youcamErr.message);
-      console.log('[Analyze Route]: Running High-Precision Optical Pixel Analyzer fallback...');
-
+    if (mode === 'wardrobe') {
+      console.log('[Analyze Route]: Wardrobe mode detected, bypassing strict YouCam facial requirements.');
       const opticalRes = await analyzeImageOptically(selfieBuffer);
       beautyProfile = opticalRes.beautyProfile;
       skinTone = opticalRes.skinTone;
       skinAnalysis = opticalRes.skinAnalysis;
+      engineSource = 'optical_pixel_analyzer';
+      engineNotice = 'Optical Pixel Diagnostics active (Wardrobe mode)';
+    } else {
+      try {
+        console.log('[Analyze Route]: Attempting live YouCam S2S AI analysis...');
+        const [bpRes, stRes] = await Promise.all([
+          analyzeParallelBeautyProfile(selfieBuffer),
+          analyzeSkinTone(selfieBuffer, contentType),
+        ]);
+        beautyProfile = bpRes;
+        skinTone = stRes;
+        skinAnalysis = beautyProfile.skin;
+        console.log('✓ Live YouCam AI Analysis succeeded');
+      } catch (youcamErr: any) {
+        console.warn('[Analyze Route]: Live YouCam AI returned:', youcamErr.message);
+        console.log('[Analyze Route]: Running High-Precision Optical Pixel Analyzer fallback...');
 
-      const isCreditLimit = youcamErr.message?.includes('CreditInsufficiency') || youcamErr.message?.includes('credits');
-      engineSource = isCreditLimit ? 'optical_pixel_analyzer_credits_exhausted' : 'optical_pixel_analyzer';
-      engineNotice = isCreditLimit
-        ? "YouCam API credits are currently exhausted. Extracted 100% dynamic diagnostics via High-Precision Optical Pixel Analysis."
-        : `Optical Pixel Diagnostics active (${youcamErr.message})`;
+        const opticalRes = await analyzeImageOptically(selfieBuffer);
+        beautyProfile = opticalRes.beautyProfile;
+        skinTone = opticalRes.skinTone;
+        skinAnalysis = opticalRes.skinAnalysis;
+
+        const isCreditLimit = youcamErr.message?.includes('CreditInsufficiency') || youcamErr.message?.includes('credits');
+        engineSource = isCreditLimit ? 'optical_pixel_analyzer_credits_exhausted' : 'optical_pixel_analyzer';
+        engineNotice = isCreditLimit
+          ? "YouCam API credits are currently exhausted. Extracted 100% dynamic diagnostics via High-Precision Optical Pixel Analysis."
+          : `Optical Pixel Diagnostics active (${youcamErr.message})`;
+      }
     }
 
     // 4. Generate Custom Look with Gemini if customPrompt is present

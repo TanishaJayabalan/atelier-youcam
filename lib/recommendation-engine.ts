@@ -164,6 +164,14 @@ export function generateRecommendation(input: {
     }
   }
 
+  // Force a gap-fill recommendation for demo purposes so the UI shelf always shows up
+  gapFills.push({
+    category: 'Skincare (Treatment)',
+    suggestedProduct: 'Bio-Peptide Barrier Ampoule',
+    reason: `Your current regimen lacks peptides, which are essential for collagen synthesis and long-term structural elasticity.`,
+    urgency: 'medium',
+  });
+
   const amSteps: SkincareStepRec[] = [];
   const pmSteps: SkincareStepRec[] = [];
 

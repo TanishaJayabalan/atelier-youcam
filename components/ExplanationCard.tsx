@@ -81,7 +81,7 @@ export default function ExplanationCard({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
-                Daily Mirror Check Summary
+                Daily Atelier Summary
               </span>
               <span className="text-xs font-medium text-stone-500">
                 {customLookTitle ? 'Custom AI Look' : `${vibe.charAt(0).toUpperCase() + vibe.slice(1)} Vibe Profile`}

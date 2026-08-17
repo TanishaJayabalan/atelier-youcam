@@ -19,7 +19,7 @@ export default function GapFillShelf({ suggestions }: GapFillShelfProps) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-amber-700" />
+            <ShoppingBag className="w-5 h-5 text-[#E57A2A]" />
             Curated Gap-Fill Recommendations
           </h3>
           <p className="text-xs text-stone-500 mt-0.5">
@@ -32,11 +32,11 @@ export default function GapFillShelf({ suggestions }: GapFillShelfProps) {
         {suggestions.map((item, idx) => (
           <div
             key={idx}
-            className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 flex flex-col justify-between hover:border-stone-300 transition-all text-xs"
+            className="rounded-xl border border-[#E8E2D9] bg-[#FAF9F6] p-4 flex flex-col justify-between hover:border-[#D9CDB8] transition-all text-xs"
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#694A33] bg-[#E8E2D9] px-2 py-0.5 rounded">
                   {item.category}
                 </span>
                 <span
@@ -74,10 +74,10 @@ export default function GapFillShelf({ suggestions }: GapFillShelfProps) {
                     name: item.suggestedProduct,
                     category: item.category,
                     reason: item.reason,
-                    brand: 'Mirror Pick',
+                    brand: 'Atelier Pick',
                   })
                 }
-                className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1 rounded-lg border border-amber-200 flex items-center gap-1 cursor-pointer transition-all"
+                className="text-[11px] font-semibold text-[#694A33] hover:text-[#523926] bg-white hover:bg-[#FAF9F6] px-3 py-1 rounded-lg border border-[#E8E2D9] flex items-center gap-1 cursor-pointer transition-all shadow-sm"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 Add to Cart

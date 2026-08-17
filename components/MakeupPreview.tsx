@@ -81,7 +81,7 @@ export default function MakeupPreview({
         </div>
 
         {/* Main Canvas Viewport */}
-        <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-stone-950 border border-stone-200 mb-5 flex items-center justify-center select-none group">
+        <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#FAF9F6] border border-stone-200 mb-5 flex items-center justify-center select-none group">
           {makeupError ? (
             <div className="p-6 text-center text-stone-300 max-w-sm flex flex-col items-center">
               <AlertCircle className="w-8 h-8 text-amber-500 mb-2" />
@@ -111,7 +111,8 @@ export default function MakeupPreview({
           ) : displayImage ? (
             isComparingSplit && rawOriginalImage && activeVtoImage ? (
               /* Interactive Split Slider View */
-              <div className="relative w-full h-full">
+              <div className="relative w-full h-full overflow-hidden">
+                {/* Bottom: Original Image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={rawOriginalImage}
@@ -119,19 +120,16 @@ export default function MakeupPreview({
                   className="absolute inset-0 w-full h-full object-cover"
                 />
 
-                <div
-                  className="absolute inset-0 overflow-hidden"
-                  style={{ width: `${sliderPos}%` }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={activeVtoImage}
-                    alt="VTO Render"
-                    className="absolute inset-0 w-full h-full object-cover max-w-none"
-                    style={{ width: '100%', height: '100%' }}
-                  />
-                </div>
+                {/* Top: VTO Image (clipped to slider position) */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={activeVtoImage}
+                  alt="VTO Render"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+                />
 
+                {/* Divider Line */}
                 <div
                   className="absolute top-0 bottom-0 w-0.5 bg-white shadow-lg pointer-events-none"
                   style={{ left: `${sliderPos}%` }}

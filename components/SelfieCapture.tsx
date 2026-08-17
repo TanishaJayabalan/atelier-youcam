@@ -6,6 +6,7 @@ import { Camera, Upload, RefreshCw, Sparkles, CheckCircle2, Image as ImageIcon, 
 interface SelfieCaptureProps {
   onSelfieSelected: (base64: string | null) => void;
   selectedSelfie: string | null;
+  captureMode?: 'portrait' | 'full-body';
 }
 
 const SAMPLE_SELFIES = [
@@ -31,7 +32,7 @@ const SAMPLE_SELFIES = [
   },
 ];
 
-export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: SelfieCaptureProps) {
+export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captureMode = 'portrait' }: SelfieCaptureProps) {
   const [sourceType, setSourceType] = useState<'camera' | 'upload' | 'samples'>('camera');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -244,10 +245,12 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
         <div>
           <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-700" />
-            1. Your Portrait &amp; Facial Canvas
+            1. {captureMode === 'full-body' ? 'Your Full Body Canvas' : 'Your Portrait & Facial Canvas'}
           </h2>
           <p className="text-xs text-stone-500 mt-0.5">
-            Real YouCam AI biometric facial analysis for skin health and color harmony.
+            {captureMode === 'full-body' 
+              ? 'Upload a full body photo for accurate wardrobe recommendations.'
+              : 'Real YouCam AI biometric facial analysis for skin health and color harmony.'}
           </p>
         </div>
 
@@ -306,8 +309,8 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
       <div className="relative mt-2">
         {flash && <div className="absolute inset-0 bg-white z-20 pointer-events-none transition-opacity" />}
 
-        {selectedSelfie && (capturedFromCamera || sourceType !== 'camera') ? (
-          <div className="relative rounded-2xl overflow-hidden bg-stone-950 border border-stone-200 aspect-[3/4] max-h-96 mx-auto flex items-center justify-center group">
+        {selectedSelfie ? (
+          <div className="relative rounded-2xl overflow-hidden bg-[#FAF9F6] border border-stone-200 aspect-[3/4] max-h-96 mx-auto flex items-center justify-center group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selectedSelfie}
@@ -330,7 +333,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie }: Self
             </div>
           </div>
         ) : sourceType === 'camera' ? (
-          <div className="relative rounded-2xl overflow-hidden bg-stone-950 aspect-[3/4] max-h-96 mx-auto flex flex-col items-center justify-center border border-stone-200">
+          <div className="relative rounded-2xl overflow-hidden bg-[#FAF9F6] aspect-[3/4] max-h-96 mx-auto flex flex-col items-center justify-center border border-stone-200">
             {cameraError ? (
               <div className="p-6 text-center text-stone-300">
                 <VideoOff className="w-8 h-8 text-amber-500 mx-auto mb-2 opacity-80" />

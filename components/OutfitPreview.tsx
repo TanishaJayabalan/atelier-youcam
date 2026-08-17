@@ -23,6 +23,7 @@ interface OutfitPreviewProps {
   renderedImageUrl: string | null;
   outfitError?: string | null;
   isRendering: boolean;
+  initialBodyPhoto?: string | null;
   onTryOnOutfit?: (bodyPhotoBase64: string, outfitItems: any[]) => Promise<void>;
   onRetry?: () => void;
 }
@@ -50,12 +51,13 @@ export default function OutfitPreview({
   renderedImageUrl,
   outfitError,
   isRendering,
+  initialBodyPhoto,
   onTryOnOutfit,
   onRetry,
 }: OutfitPreviewProps) {
   const { topOrDress, bottom, outerwear, stylingRationale } = outfit;
 
-  const [bodyPhoto, setBodyPhoto] = useState<string | null>(null);
+  const [bodyPhoto, setBodyPhoto] = useState<string | null>(initialBodyPhoto || null);
   const [sourceType, setSourceType] = useState<'upload' | 'camera' | 'samples'>('upload');
   const [selectedPieceMode, setSelectedPieceMode] = useState<'all' | 'top' | 'bottom' | 'outerwear'>('all');
   const [cameraActive, setCameraActive] = useState(false);
@@ -484,17 +486,17 @@ export default function OutfitPreview({
         )}
 
         {/* Main Canvas Viewport */}
-        <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-stone-900 border border-stone-200 mb-5 flex items-center justify-center group">
+        <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-[#FAF9F6] border border-[#E8E2D9] mb-5 flex items-center justify-center group">
           {outfitError ? (
-            <div className="p-6 text-center text-stone-300 max-w-sm flex flex-col items-center">
+            <div className="p-6 text-center text-stone-600 max-w-sm flex flex-col items-center">
               <AlertCircle className="w-8 h-8 text-amber-500 mb-2" />
-              <h4 className="text-xs font-bold text-white mb-1">Clothes Try-On Unavailable</h4>
-              <p className="text-[11px] text-stone-400 mb-3">{outfitError}</p>
+              <h4 className="text-xs font-bold text-[#2C2C2C] mb-1">Clothes Try-On Unavailable</h4>
+              <p className="text-[11px] text-stone-500 mb-3">{outfitError}</p>
               {onRetry && (
                 <button
                   type="button"
                   onClick={onRetry}
-                  className="bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all"
+                  className="bg-[#694A33] hover:bg-[#523926] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   Retry Clothes VTO
@@ -502,38 +504,38 @@ export default function OutfitPreview({
               )}
             </div>
           ) : isRendering ? (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center animate-shimmer relative">
-              <div className="w-10 h-10 rounded-full border-3 border-amber-600 border-t-transparent animate-spin mb-3" />
-              <span className="text-xs font-semibold text-stone-200">
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative">
+              <div className="w-10 h-10 rounded-full border-3 border-[#694A33] border-t-transparent animate-spin mb-3" />
+              <span className="text-xs font-semibold text-[#2C2C2C]">
                 Fitting Selected Apparel onto Body via YouCam AI...
               </span>
-              <span className="text-[11px] text-stone-400 mt-1">
+              <span className="text-[11px] text-stone-500 mt-1">
                 Synthesizing silhouette &amp; draping from your digital wardrobe
               </span>
             </div>
           ) : garmentImage ? (
             viewMode === 'paired' && bodyPhoto ? (
               /* Paired Dual Canvas View */
-              <div className="w-full h-full grid grid-cols-2 gap-1.5 bg-stone-950 p-1.5">
-                <div className="relative h-full rounded-xl overflow-hidden">
+              <div className="w-full h-full grid grid-cols-2 gap-1.5 bg-[#FAF9F6] p-1.5">
+                <div className="relative h-full rounded-xl overflow-hidden bg-white border border-[#E8E2D9]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={bodyPhoto}
                     alt="Your Body Canvas"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
-                  <div className="absolute bottom-2 left-2 bg-stone-900/80 backdrop-blur-xs text-[9px] font-semibold text-white px-2 py-0.5 rounded">
+                  <div className="absolute bottom-2 left-2 bg-white/80 backdrop-blur-xs text-[9px] font-semibold text-[#2C2C2C] px-2 py-0.5 rounded border border-[#E8E2D9]">
                     Your Canvas
                   </div>
                 </div>
-                <div className="relative h-full rounded-xl overflow-hidden">
+                <div className="relative h-full rounded-xl overflow-hidden bg-white border border-[#E8E2D9]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={garmentImage}
                     alt="Selected Garment"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
-                  <div className="absolute bottom-2 left-2 bg-stone-900/80 backdrop-blur-xs text-[9px] font-semibold text-white px-2 py-0.5 rounded">
+                  <div className="absolute bottom-2 left-2 bg-white/80 backdrop-blur-xs text-[9px] font-semibold text-[#2C2C2C] px-2 py-0.5 rounded border border-[#E8E2D9]">
                     {renderedImageUrl ? 'YouCam Clothes VTO' : 'Selected Piece'}
                   </div>
                 </div>
@@ -545,12 +547,12 @@ export default function OutfitPreview({
                 <img
                   src={garmentImage}
                   alt="Selected Outfit Try-On"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
 
                 {/* Status Badge */}
-                <div className="absolute bottom-3 right-3 bg-stone-900/80 backdrop-blur-md text-white text-[11px] font-medium px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#2C2C2C] text-[11px] font-medium px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm border border-[#E8E2D9]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#4A5D23]" />
                   {renderedImageUrl ? 'YouCam Clothes VTO Rendered' : 'Wardrobe Piece Matched'}
                 </div>
 
@@ -561,7 +563,7 @@ export default function OutfitPreview({
                     onClick={() => {
                       setBodyPhoto(null);
                     }}
-                    className="absolute bottom-3 left-3 bg-stone-900/85 hover:bg-stone-800 text-white text-[10px] font-medium px-2.5 py-1 rounded-lg border border-stone-700 shadow-sm transition-all"
+                    className="absolute bottom-3 left-3 bg-white/90 hover:bg-white text-[#2C2C2C] text-[10px] font-medium px-2.5 py-1 rounded-lg border border-[#E8E2D9] shadow-sm transition-all"
                   >
                     Change Body Photo
                   </button>
@@ -569,15 +571,15 @@ export default function OutfitPreview({
 
                 {/* Garment Tag */}
                 {topOrDress && (
-                  <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-md text-white text-[10px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                    <Sparkle className="w-3 h-3 text-amber-400" />
+                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md text-[#2C2C2C] text-[10px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm border border-[#E8E2D9]">
+                    <Sparkle className="w-3 h-3 text-[#C28250]" />
                     <span>{topOrDress.brand}: {topOrDress.name}</span>
                   </div>
                 )}
               </>
             )
           ) : (
-            <div className="p-6 text-center text-stone-400 text-xs">
+            <div className="p-6 text-center text-stone-500 text-xs">
               Waiting for analysis...
             </div>
           )}

@@ -420,8 +420,48 @@ export default function HairAnalysisPanel({
         {/* TAB 1: HAIRSTYLES VTO */}
         {activeTab === 'styles' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Template Gallery */}
-            <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* VTO Canvas Preview (Moved to Left) */}
+            <div className="lg:col-span-7 bg-[#FAF9F6] rounded-3xl overflow-hidden min-h-[500px] flex flex-col items-center justify-center relative shadow-sm border border-[#E8E2D9] p-4">
+              {renderedHairUrl ? (
+                <img
+                  src={renderedHairUrl}
+                  alt="Hairstyle Try-On"
+                  className="w-full h-full object-cover rounded-2xl"
+                />
+              ) : userImageUrl ? (
+                <div className="relative w-full h-full flex flex-col items-center justify-center">
+                  <img
+                    src={userImageUrl}
+                    alt="Original Selfie"
+                    className="w-full h-full object-cover rounded-2xl opacity-90"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 via-transparent to-transparent flex flex-col items-center justify-end p-6 text-center rounded-2xl">
+                    <Sparkles className="w-6 h-6 text-amber-400 mb-2 animate-bounce" />
+                    <span className="text-sm font-bold text-white tracking-wide">Select Any Haircut For Inspiration</span>
+                    <span className="text-[11px] text-stone-200 mt-1">AI 3D Hairstyle Transfer</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center p-8 text-stone-400 bg-white/50 rounded-2xl border border-dashed border-stone-300 w-full max-w-sm mx-auto">
+                  <Sparkles className="w-8 h-8 text-[#694A33] mx-auto mb-3 opacity-60" />
+                  <p className="text-sm font-semibold text-[#2C2C2C]">AI Hairstyle Try-On Ready</p>
+                  <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                    Upload a selfie first in the Skin Analysis tab, then select any template here for a realistic preview.
+                  </p>
+                </div>
+              )}
+
+              {isProcessing && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center text-[#2C2C2C] p-4 rounded-2xl z-10">
+                  <RefreshCw className="w-8 h-8 text-[#694A33] animate-spin mb-3" />
+                  <p className="text-sm font-semibold">Transforming Hair Architecture...</p>
+                  <p className="text-[11px] text-stone-500 mt-1">Applying volumetric blending</p>
+                </div>
+              )}
+            </div>
+
+            {/* Template Gallery (Moved to Right) */}
+            <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5 h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               {HAIRSTYLE_TEMPLATES.map((tmpl) => {
                 const isSelected = selectedStyle === tmpl.id;
                 return (
@@ -431,82 +471,37 @@ export default function HairAnalysisPanel({
                     className={`cursor-pointer group p-3.5 rounded-xl border transition-all duration-200 flex flex-col justify-between ${
                       isSelected
                         ? 'bg-amber-50/60 border-amber-500 shadow-sm'
-                        : 'bg-stone-50 hover:bg-white border-stone-200 hover:border-stone-300'
+                        : 'bg-white hover:bg-stone-50 border-[#E8E2D9] hover:border-stone-300 shadow-sm'
                     }`}
                   >
-                    <div className="flex items-start gap-3 mb-2.5">
+                    <div className="flex flex-col items-center text-center gap-2 mb-3">
                       <img
                         src={tmpl.previewImageUrl}
                         alt={tmpl.name}
-                        className="w-14 h-14 rounded-lg object-cover border border-stone-200 shrink-0 group-hover:scale-105 transition-transform"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-white shadow-sm shrink-0 group-hover:scale-105 transition-transform"
                       />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[10px] font-bold text-amber-900 uppercase tracking-wider bg-amber-100 px-2 py-0.5 rounded">
-                            {tmpl.effortLevel}
-                          </span>
-                        </div>
-                        <h4 className="text-xs font-semibold text-stone-900 truncate">{tmpl.name}</h4>
-                        <p className="text-[11px] text-stone-500 line-clamp-2 mt-0.5 leading-snug">
-                          {tmpl.description}
-                        </p>
+                        <h4 className="text-xs font-bold text-stone-900 truncate mb-1">{tmpl.name}</h4>
+                        <span className="text-[9px] font-bold text-amber-900 uppercase tracking-wider bg-amber-100 px-2 py-0.5 rounded-full inline-block">
+                          {tmpl.effortLevel}
+                        </span>
                       </div>
                     </div>
 
                     <button
                       type="button"
                       disabled={isProcessing}
-                      className={`w-full py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                      className={`w-full py-2 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm ${
                         isSelected
-                          ? 'bg-amber-700 text-white'
-                          : 'bg-stone-200/80 hover:bg-stone-300 text-stone-800'
+                          ? 'bg-[#694A33] text-white shadow-[#694A33]/20'
+                          : 'bg-[#F2EBE1] hover:bg-[#E8E2D9] text-[#694A33]'
                       }`}
                     >
-                      {isSelected && isProcessing ? 'Rendering...' : 'Try On Style'}
+                      {isSelected && isProcessing ? 'Rendering...' : 'Try On'}
                     </button>
                   </div>
                 );
               })}
-            </div>
-
-            {/* VTO Canvas Preview */}
-            <div className="lg:col-span-4 bg-stone-950 rounded-2xl overflow-hidden min-h-[380px] flex flex-col items-center justify-center relative shadow-inner p-4">
-              {renderedHairUrl ? (
-                <img
-                  src={renderedHairUrl}
-                  alt="Hairstyle Try-On"
-                  className="w-full h-full object-cover rounded-xl"
-                />
-              ) : userImageUrl ? (
-                <div className="relative w-full h-full flex flex-col items-center justify-center">
-                  <img
-                    src={userImageUrl}
-                    alt="Original Selfie"
-                    className="w-full h-auto max-h-[340px] object-cover rounded-xl opacity-75"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent flex flex-col items-center justify-end p-4 text-center">
-                    <Sparkles className="w-6 h-6 text-amber-400 mb-1 animate-bounce" />
-                    <span className="text-xs font-bold text-white">Select Any Haircut Template</span>
-                    <span className="text-[10px] text-stone-300 mt-0.5">Renders 3D Hairstyle Transfer with YouCam AI</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center p-6 text-stone-400">
-                  <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-2 opacity-60" />
-                  <p className="text-xs font-semibold text-stone-300">AI Hairstyle Try-On Ready</p>
-                  <p className="text-[11px] text-stone-500 mt-1 max-w-[200px] leading-relaxed">
-                    Select any haircut template to render a realistic 3D hair transfer preview on your selfie.
-                  </p>
-                </div>
-              )}
-
-              {isProcessing && (
-                <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4">
-                  <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mb-2" />
-                  <p className="text-xs font-semibold">Transforming Hair Architecture...</p>
-                  <p className="text-[10px] text-stone-400 mt-0.5">Applying volumetric blending &amp; root transition</p>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -514,86 +509,71 @@ export default function HairAnalysisPanel({
         {/* TAB 2: HAIR COLOR SHADES */}
         {activeTab === 'colors' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {HAIR_COLOR_SHADES.map((shade) => {
-                const isSelected = selectedColor === shade.id;
-                return (
-                  <div
-                    key={shade.id}
-                    onClick={() => handleApplyColor(shade)}
-                    className={`cursor-pointer p-3 rounded-xl border transition-all duration-200 flex flex-col justify-between ${
-                      isSelected
-                        ? 'bg-amber-50/60 border-amber-500 shadow-sm ring-1 ring-amber-400'
-                        : 'bg-stone-50 hover:bg-white border-stone-200 hover:border-stone-300'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span
-                          className="w-5 h-5 rounded-full border border-stone-300 shadow-2xs shrink-0"
-                          style={{ backgroundColor: shade.hex }}
-                        />
-                        <span className="text-xs font-semibold text-stone-900 truncate">{shade.name}</span>
-                      </div>
-                      <span className="text-[10px] uppercase font-mono tracking-wider text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded inline-block mb-1.5">
-                        {shade.toneFamily}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={isProcessing}
-                      className={`w-full mt-2 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-amber-700 text-white'
-                          : 'bg-stone-200 text-stone-800 hover:bg-stone-300'
-                      }`}
-                    >
-                      {isSelected && isProcessing ? 'Applying...' : 'Apply Tint'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* VTO Canvas Preview */}
-            <div className="lg:col-span-4 bg-stone-950 rounded-2xl overflow-hidden min-h-[380px] flex flex-col items-center justify-center relative shadow-inner p-4">
+            {/* VTO Canvas Preview (Moved to Left) */}
+            <div className="lg:col-span-7 bg-[#FAF9F6] rounded-3xl overflow-hidden min-h-[500px] flex flex-col items-center justify-center relative shadow-sm border border-[#E8E2D9] p-4">
               {renderedHairUrl ? (
                 <img
                   src={renderedHairUrl}
                   alt="Hair Color Try-On"
-                  className="w-full h-full object-cover rounded-xl"
+                  className="w-full h-full object-cover rounded-2xl"
                 />
               ) : userImageUrl ? (
                 <div className="relative w-full h-full flex flex-col items-center justify-center">
                   <img
                     src={userImageUrl}
                     alt="Original Selfie"
-                    className="w-full h-auto max-h-[340px] object-cover rounded-xl opacity-75"
+                    className="w-full h-full object-cover rounded-2xl opacity-90"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent flex flex-col items-center justify-end p-4 text-center">
-                    <Sparkles className="w-6 h-6 text-amber-400 mb-1 animate-bounce" />
-                    <span className="text-xs font-bold text-white">Select Any Hair Color Shade</span>
-                    <span className="text-[10px] text-stone-300 mt-0.5">Renders Neural Hair Tint on Your Selfie</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 via-transparent to-transparent flex flex-col items-center justify-end p-6 text-center rounded-2xl">
+                    <Sparkles className="w-6 h-6 text-amber-400 mb-2 animate-bounce" />
+                    <span className="text-sm font-bold text-white tracking-wide">Select Any Hair Color Shade</span>
+                    <span className="text-[11px] text-stone-200 mt-1">Renders Neural Hair Tint on Your Selfie</span>
                   </div>
                 </div>
               ) : (
-                <div className="text-center p-6 text-stone-400">
-                  <Sparkles className="w-8 h-8 text-amber-500 mx-auto mb-2 opacity-60" />
-                  <p className="text-xs font-semibold text-stone-300">Neural Color Try-On Ready</p>
-                  <p className="text-[11px] text-stone-500 mt-1 max-w-[200px] leading-relaxed">
-                    Select any hair shade to render seamless neural color tinting on your portrait.
+                <div className="text-center p-8 text-stone-400 bg-white/50 rounded-2xl border border-dashed border-stone-300 w-full max-w-sm mx-auto">
+                  <Sparkles className="w-8 h-8 text-[#694A33] mx-auto mb-3 opacity-60" />
+                  <p className="text-sm font-semibold text-[#2C2C2C]">AI Hair Tint Ready</p>
+                  <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                    Upload a selfie first in the Skin Analysis tab, then select any shade here for a realistic preview.
                   </p>
                 </div>
               )}
 
               {isProcessing && (
-                <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4">
-                  <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mb-2" />
-                  <p className="text-xs font-semibold">Tinting Hair Strands...</p>
-                  <p className="text-[10px] text-stone-400 mt-0.5">Blending pigment with natural undertone</p>
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center text-[#2C2C2C] p-4 rounded-2xl z-10">
+                  <RefreshCw className="w-8 h-8 text-[#694A33] animate-spin mb-3" />
+                  <p className="text-sm font-semibold">Synthesizing Keratin Pigment...</p>
+                  <p className="text-[11px] text-stone-500 mt-1">Applying global dynamic lighting</p>
                 </div>
               )}
+            </div>
+
+            {/* Color Gallery (Moved to Right) */}
+            <div className="lg:col-span-5 grid grid-cols-2 sm:grid-cols-3 gap-3 h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+              {HAIR_COLOR_SHADES.map((shade) => {
+                const isSelected = selectedColor === shade.id;
+                return (
+                  <div
+                    key={shade.id}
+                    onClick={() => handleApplyColor(shade)}
+                    className={`cursor-pointer p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-center items-center text-center ${
+                      isSelected
+                        ? 'bg-amber-50/60 border-amber-500 shadow-sm ring-1 ring-amber-400'
+                        : 'bg-white hover:bg-stone-50 border-[#E8E2D9] hover:border-stone-300 shadow-sm'
+                    }`}
+                  >
+                    <span
+                      className="w-10 h-10 rounded-full border-4 border-white shadow-md shrink-0 mb-3"
+                      style={{ backgroundColor: shade.hex }}
+                    />
+                    <span className="text-xs font-bold text-stone-900 mb-1 leading-tight">{shade.name}</span>
+                    <span className="text-[9px] uppercase font-bold tracking-wider text-stone-500">
+                      {shade.toneFamily}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

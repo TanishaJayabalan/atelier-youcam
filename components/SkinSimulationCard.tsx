@@ -149,20 +149,20 @@ export default function SkinSimulationCard({
   const imgToCompare = simulatedUrl || originalImageUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80';
 
   return (
-    <div className="bg-gradient-to-br from-stone-900 via-stone-950 to-stone-900 rounded-2xl border border-stone-800 text-stone-100 p-6 shadow-xl relative overflow-hidden">
+    <div className="bg-white rounded-2xl border border-[#E8E2D9] text-[#2C2C2C] p-6 shadow-sm relative overflow-hidden">
       {/* Background ambient glow */}
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-5 border-b border-stone-800">
+      <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-5 border-b border-[#E8E2D9]">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-300 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#694A33] bg-amber-50 px-2.5 py-0.5 rounded-full border border-[#D9CDB8]">
               AI Predictive Derm-Simulation
             </span>
-            <span className="text-xs text-stone-400">30-Day Routine Projection</span>
+            <span className="text-xs text-stone-500">30-Day Routine Projection</span>
           </div>
-          <h3 className="text-lg font-serif font-medium text-stone-100">
+          <h3 className="text-lg font-serif font-medium text-[#2C2C2C]">
             Projected Skin Barrier Recovery &amp; Radiance
           </h3>
         </div>
@@ -172,7 +172,7 @@ export default function SkinSimulationCard({
             <button
               onClick={handleSimulate}
               disabled={isSimulating}
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-medium text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 bg-[#694A33] hover:bg-[#523926] disabled:opacity-50 text-white font-medium text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
             >
               {isSimulating ? (
                 <>
@@ -190,11 +190,11 @@ export default function SkinSimulationCard({
             </button>
           )}
           {simulatedUrl && (
-            <div className="flex items-center bg-stone-800/80 p-0.5 rounded-lg border border-stone-700 text-xs">
+            <div className="flex items-center bg-[#FAF9F6] p-0.5 rounded-lg border border-[#E8E2D9] text-xs">
               <button
                 onClick={() => setActiveTab('slider')}
                 className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
-                  activeTab === 'slider' ? 'bg-amber-600 text-white font-medium' : 'text-stone-400 hover:text-white'
+                  activeTab === 'slider' ? 'bg-white text-[#2C2C2C] shadow-sm font-medium' : 'text-stone-500 hover:text-[#2C2C2C]'
                 }`}
               >
                 Split View
@@ -202,7 +202,7 @@ export default function SkinSimulationCard({
               <button
                 onClick={() => setActiveTab('projections')}
                 className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
-                  activeTab === 'projections' ? 'bg-amber-600 text-white font-medium' : 'text-stone-400 hover:text-white'
+                  activeTab === 'projections' ? 'bg-white text-[#2C2C2C] shadow-sm font-medium' : 'text-stone-500 hover:text-[#2C2C2C]'
                 }`}
               >
                 Metrics
@@ -214,7 +214,7 @@ export default function SkinSimulationCard({
 
       <div className="mt-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         {/* Interactive Comparison Slider */}
-        <div className="lg:col-span-7 relative h-72 sm:h-80 rounded-xl overflow-hidden border border-stone-800 select-none group">
+        <div className="lg:col-span-7 relative h-72 sm:h-80 rounded-xl overflow-hidden border border-[#E8E2D9] select-none group">
           {/* Baseline Image (Before) */}
           <div className="absolute inset-0 w-full h-full">
             <img
@@ -222,7 +222,7 @@ export default function SkinSimulationCard({
               alt="Baseline Skin"
               className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded text-[11px] font-mono uppercase tracking-wider text-amber-200 border border-amber-500/20">
+            <div className="absolute bottom-3 left-3 bg-white/80 backdrop-blur-md px-2.5 py-1 rounded text-[11px] font-mono uppercase tracking-wider text-[#694A33] border border-white/50">
               Day 1 Baseline
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function SkinSimulationCard({
               alt="Simulated Outcome"
               className={`w-full h-full object-cover ${!simulatedUrl ? 'filter brightness-105 contrast-95 saturate-105' : ''}`}
             />
-            <div className="absolute bottom-3 right-3 bg-emerald-950/80 backdrop-blur-md px-2.5 py-1 rounded text-[11px] font-mono uppercase tracking-wider text-emerald-300 border border-emerald-500/30">
+            <div className="absolute bottom-3 right-3 bg-white/80 backdrop-blur-md px-2.5 py-1 rounded text-[11px] font-mono uppercase tracking-wider text-[#4A5D23] border border-white/50">
               Day 30 Projected
             </div>
           </div>
@@ -268,8 +268,8 @@ export default function SkinSimulationCard({
 
         {/* Dynamic Clinical Projections Checklist */}
         <div className="lg:col-span-5 flex flex-col justify-between space-y-3.5 text-xs">
-          <div className="bg-stone-950/60 p-4 rounded-xl border border-stone-800/80 space-y-3">
-            <h4 className="font-medium text-stone-200 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+          <div className="bg-[#FAF9F6] p-4 rounded-xl border border-[#E8E2D9] space-y-3">
+            <h4 className="font-medium text-[#2C2C2C] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               Expected Clinical Trajectory
             </h4>
@@ -278,14 +278,14 @@ export default function SkinSimulationCard({
               {activeProjections.map((item, idx) => (
                 <div key={idx}>
                   <div className="flex justify-between text-[11px] mb-1">
-                    <span className="text-stone-300 font-medium">{item.concern}</span>
-                    <span className="text-emerald-400 font-semibold">
+                    <span className="text-stone-600 font-medium">{item.concern}</span>
+                    <span className="text-[#4A5D23] font-semibold">
                       +{item.improvementPercent}% Projected ({item.baselineScore} → {item.projectedScore})
                     </span>
                   </div>
-                  <div className="w-full bg-stone-800/90 rounded-full h-2 overflow-hidden flex items-center">
+                  <div className="w-full bg-[#E8E2D9] rounded-full h-2 overflow-hidden flex items-center">
                     <div
-                      className="bg-gradient-to-r from-amber-500 via-emerald-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-[#C28250] via-[#8B9A46] to-[#4A5D23] h-full rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(100, Math.max(15, item.projectedScore))}%` }}
                     />
                   </div>
@@ -294,7 +294,7 @@ export default function SkinSimulationCard({
             </div>
           </div>
 
-          <p className="text-[11px] text-stone-400 leading-relaxed italic bg-stone-900/40 p-3 rounded-lg border border-stone-800/60">
+          <p className="text-[11px] text-stone-500 leading-relaxed italic bg-[#FAF9F6] p-3 rounded-lg border border-[#E8E2D9]">
             *Simulation calibrated using active skin telemetry and dermatological cell turnover curves over 28-35 days of consistent AM/PM routine adherence.
           </p>
         </div>
