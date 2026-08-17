@@ -4,7 +4,7 @@ export type GarmentCategory =
   | 'full_body'
   | 'upper_body'
   | 'lower_body'
-  | 'outerwear'
+  | 'outer'
   | 'shoes'
   | 'auto';
 
@@ -17,7 +17,7 @@ export interface ClothesVTOResult {
 
 /**
  * Normalizes internal category strings to YouCam AI Clothes v4.0 category types:
- * Allowed values by YouCam S2S cloth-v4: 'full_body' | 'upper_body' | 'lower_body' | 'outerwear' | 'shoes' | 'auto'
+ * Allowed values by YouCam S2S cloth-v4: 'full_body' | 'upper_body' | 'lower_body' | 'outer' | 'shoes' | 'auto'
  */
 export function normalizeGarmentCategory(category?: string): GarmentCategory {
   if (!category) return 'auto';
@@ -60,7 +60,7 @@ export function normalizeGarmentCategory(category?: string): GarmentCategory {
     cat.includes('vest') ||
     cat.includes('cardigan')
   ) {
-    return 'outerwear';
+    return 'outer';
   }
   if (
     cat.includes('shoe') ||
