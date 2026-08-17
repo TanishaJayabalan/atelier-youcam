@@ -1,3 +1,4 @@
+// @ts-ignore
 import AdmZip from 'adm-zip';
 import sharp from 'sharp';
 import { uploadFile, runTask, pollTask } from './client';

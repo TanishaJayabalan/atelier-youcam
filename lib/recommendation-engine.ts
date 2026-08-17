@@ -102,13 +102,15 @@ const VIBE_MAKEUP_PROFILES: Record<
 export function generateRecommendation(input: {
   skin: SkinAnalysisResult;
   skinTone?: SkinToneResult;
+  tone?: SkinToneResult;
   weather: WeatherResult;
   vibe: 'classy' | 'elegant' | 'bold' | 'natural';
-  closet: ClosetItem[];
+  closet?: ClosetItem[];
+  ownedCloset?: ClosetItem[];
   customLook?: import('./gemini/beauty-stylist').CustomBeautyLook;
 }): Recommendation {
-  const { skin, skinTone, weather, vibe, closet, customLook } = input;
-  const tone = skinTone || {
+  const { skin, skinTone, tone: directTone, weather, vibe, closet, ownedCloset: directOwned, customLook } = input;
+  const tone = skinTone || directTone || {
     skinToneHex: '#DFAC82',
     hexCode: '#DFAC82',
     undertone: 'warm' as const,
@@ -116,7 +118,8 @@ export function generateRecommendation(input: {
     season: 'Autumn',
     eyebrowColorHex: '#422B1E',
   };
-  const ownedCloset = closet.filter((item) => item.is_owned);
+  const rawCloset = closet || directOwned || [];
+  const ownedCloset = rawCloset.filter((item) => item.is_owned !== false);
 
   const warnings: string[] = [];
   const gapFills: GapFillSuggestion[] = [];
@@ -482,63 +485,108 @@ export function generateRecommendation(input: {
   });
 
   // =========================================================================
-  // 3. OUTFIT SELECTION & WEATHER SYNERGY
+  // 3. ROBUST OUTFIT SELECTION & WEATHER/UNDERTONE SYNERGY
   // =========================================================================
   const outfitItems = ownedCloset.filter((i) => i.category.startsWith('outfit_'));
   const weatherCategory = weather.conditionCategory;
+  const tempC = weather.tempC;
+  const isColdOrRain = weatherCategory === 'rain' || weatherCategory === 'cold' || weatherCategory === 'cool' || tempC <= 18;
 
-  // Filter tops, bottoms, dresses matching vibe & weather
-  const matchingDresses = outfitItems.filter((i) => {
-    if (i.category !== 'outfit_dress') return false;
-    const meta = i.metadata as OutfitMetadata;
-    const matchesVibe = meta.formality_tag === vibe;
-    const matchesWeather = meta.weather_tags.includes(weatherCategory) || meta.weather_tags.includes('warm');
-    return matchesVibe && matchesWeather;
-  });
+  // Multi-factor garment scoring helper
+  const scoreGarment = (item: ClosetItem): number => {
+    let score = 50;
+    const meta = (item.metadata || {}) as OutfitMetadata;
+    const itemVibe = meta.formality_tag || 'classy';
+    const weatherTags = meta.weather_tags || ['warm'];
+    const colorHex = (meta.color_hex || '').toLowerCase();
 
-  const matchingTops = outfitItems.filter((i) => {
-    if (i.category !== 'outfit_top') return false;
-    const meta = i.metadata as OutfitMetadata;
-    return meta.formality_tag === vibe || (vibe === 'natural' && meta.formality_tag === 'casual');
-  });
+    // 1. Vibe Harmony (+40 exact, +20 compatible)
+    if (itemVibe === vibe) {
+      score += 40;
+    } else if (vibe === 'natural' && itemVibe === 'casual') {
+      score += 40;
+    } else if ((vibe === 'classy' && itemVibe === 'elegant') || (vibe === 'elegant' && itemVibe === 'classy')) {
+      score += 25;
+    } else if (vibe === 'bold' && (itemVibe === 'classy' || itemVibe === 'elegant')) {
+      score += 20;
+    }
 
-  const matchingBottoms = outfitItems.filter((i) => {
-    if (i.category !== 'outfit_bottom') return false;
-    const meta = i.metadata as OutfitMetadata;
-    return meta.weather_tags.includes(weatherCategory) || meta.weather_tags.includes('warm') || meta.formality_tag === vibe;
-  });
+    // 2. Weather Harmony (+30 exact, +15 seasonal temp)
+    if (weatherTags.includes(weatherCategory)) {
+      score += 30;
+    }
+    if (tempC >= 24 && (weatherTags.includes('hot') || weatherTags.includes('warm'))) {
+      score += 15;
+    } else if (tempC < 20 && (weatherTags.includes('cool') || weatherTags.includes('cold'))) {
+      score += 15;
+    }
+
+    // 3. Skin Undertone & Color Harmony (+15)
+    const undertone = (tone.undertone || 'neutral').toLowerCase();
+    if (undertone === 'warm') {
+      // Warm golds, terracotta, camels, warm greens, peaches
+      if (colorHex.includes('c19a6b') || colorHex.includes('b85d43') || colorHex.includes('fffdd0') || colorHex.includes('708238') || colorHex.includes('e89078')) {
+        score += 15;
+      }
+    } else if (undertone === 'cool') {
+      // Emeralds, sapphires, berries, crisp whites, blacks
+      if (colorHex.includes('097969') || colorHex.includes('0f2027') || colorHex.includes('111111') || colorHex.includes('fafafa') || colorHex.includes('8e2800') || colorHex.includes('c41e3a')) {
+        score += 15;
+      }
+    } else {
+      score += 15; // Neutral harmonizes universally
+    }
+
+    // 4. Boost recently added/custom items
+    if (item.created_at) {
+      score += 5;
+    }
+
+    return score;
+  };
+
+  const dresses = outfitItems.filter((i) => i.category === 'outfit_dress').sort((a, b) => scoreGarment(b) - scoreGarment(a));
+  const tops = outfitItems.filter((i) => i.category === 'outfit_top').sort((a, b) => scoreGarment(b) - scoreGarment(a));
+  const bottoms = outfitItems.filter((i) => i.category === 'outfit_bottom').sort((a, b) => scoreGarment(b) - scoreGarment(a));
+  const outerOptions = outfitItems.filter((i) => i.category === 'outfit_outer').sort((a, b) => scoreGarment(b) - scoreGarment(a));
 
   let topOrDress: ClosetItem | undefined;
   let bottom: ClosetItem | undefined;
   let outerwear: ClosetItem | undefined;
   let stylingRationale = '';
 
-  if (matchingDresses.length > 0 && (vibe === 'elegant' || vibe === 'bold')) {
-    topOrDress = matchingDresses[0];
-    stylingRationale = `Selected the ${topOrDress.name} to capture a striking ${vibe} silhouette suitable for ${weather.tempC}°C ${weather.condition}.`;
-  } else if (matchingTops.length > 0) {
-    topOrDress = matchingTops[0];
-    bottom = matchingBottoms[0] || outfitItems.find((i) => i.category === 'outfit_bottom');
-    stylingRationale = `Paired the ${topOrDress.name} with ${bottom?.name || 'tailored trousers'} for a balanced ${vibe} aesthetic optimized for today's ${weatherCategory} weather.`;
+  const bestDress = dresses[0];
+  const bestTop = tops[0];
+  const bestBottom = bottoms[0];
+
+  const dressScore = bestDress ? scoreGarment(bestDress) : -1;
+  const comboScore = bestTop && bestBottom ? (scoreGarment(bestTop) + scoreGarment(bestBottom)) / 2 : (bestTop ? scoreGarment(bestTop) : -1);
+
+  // Choose dress if dress is available and scores competitively or for elegant/bold/classy vibes
+  if (bestDress && (dressScore >= comboScore || vibe === 'elegant' || (vibe === 'bold' && Math.random() > 0.3) || !bestTop || !bestBottom)) {
+    topOrDress = bestDress;
+    stylingRationale = `Selected the statement **${topOrDress.name}** (${(topOrDress.metadata as any)?.color || 'custom color'}) for a standout ${vibe} silhouette calibrated for ${tempC}°C ${weather.condition}.`;
+  } else if (bestTop) {
+    topOrDress = bestTop;
+    bottom = bestBottom || outfitItems.find((i) => i.category === 'outfit_bottom');
+    stylingRationale = `Styled the **${topOrDress.name}** paired seamlessly with the **${bottom?.name || 'tailored bottoms'}** to achieve a structured ${vibe} aesthetic optimized for today's ${weatherCategory} climate.`;
   } else {
-    // Fallback: pick best available
     topOrDress = outfitItems.find((i) => i.category === 'outfit_top' || i.category === 'outfit_dress');
     bottom = outfitItems.find((i) => i.category === 'outfit_bottom');
-    stylingRationale = `Selected versatile closet essentials (${topOrDress?.name}) tailored for ${weather.tempC}°C.`;
+    stylingRationale = `Selected versatile closet essentials (${topOrDress?.name || 'garment'}) tailored for ${tempC}°C.`;
   }
 
-  // Outerwear logic for cold or rain
-  if (weatherCategory === 'rain' || weatherCategory === 'cold' || weatherCategory === 'cool' || weather.tempC <= 18) {
-    const matchingOuter = outfitItems.find((i) => {
-      if (i.category !== 'outfit_outer') return false;
+  // Outerwear layering
+  if (isColdOrRain) {
+    const matchingOuter = outerOptions.find((i) => {
       const meta = i.metadata as OutfitMetadata;
-      if (weatherCategory === 'rain' && meta.weather_tags.includes('rain')) return true;
-      return meta.weather_tags.includes(weatherCategory) || meta.formality_tag === vibe;
-    });
+      if (weatherCategory === 'rain' && (meta.weather_tags || []).includes('rain')) return true;
+      return (meta.weather_tags || []).includes(weatherCategory) || meta.formality_tag === vibe || isColdOrRain;
+    }) || outerOptions[0];
 
     if (matchingOuter) {
       outerwear = matchingOuter;
-      stylingRationale += ` Layered with ${outerwear.name} for thermal comfort and weather protection.`;
+      stylingRationale += ` Layered with the **${outerwear.name}** for thermal comfort and weather resistance.`;
     } else if (weatherCategory === 'rain') {
       gapFills.push({
         category: 'Outerwear',

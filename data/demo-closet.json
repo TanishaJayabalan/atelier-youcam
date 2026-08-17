@@ -45,6 +45,36 @@
     }
   },
   {
+    "id": "closet_top_4",
+    "category": "outfit_top",
+    "name": "Cashmere Cable-Knit Crewneck Sweater",
+    "brand": "Toteme",
+    "image_url": "https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Oatmeal Heather",
+      "color_hex": "#D8C7B5",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "100% Mongolian Cashmere"
+    }
+  },
+  {
+    "id": "closet_top_5",
+    "category": "outfit_top",
+    "name": "Crisp Poplin Oversized Button-Down",
+    "brand": "COS",
+    "image_url": "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Sky Blue Stripe",
+      "color_hex": "#87CEEB",
+      "weather_tags": ["hot", "warm", "cool"],
+      "fabric": "Organic Cotton Poplin"
+    }
+  },
+  {
     "id": "closet_bottom_1",
     "category": "outfit_bottom",
     "name": "High-Waist Pleated Wide-Leg Trousers",
@@ -72,6 +102,36 @@
       "color_hex": "#264366",
       "weather_tags": ["cool", "cold", "rain", "warm"],
       "fabric": "Rigid Organic Cotton"
+    }
+  },
+  {
+    "id": "closet_bottom_3",
+    "category": "outfit_bottom",
+    "name": "Fluid Silk Charmeuse Bias Midi Skirt",
+    "brand": "Vince",
+    "image_url": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Champagne Pearl",
+      "color_hex": "#F0E6D2",
+      "weather_tags": ["hot", "warm", "cool"],
+      "fabric": "100% Silk Charmeuse"
+    }
+  },
+  {
+    "id": "closet_bottom_4",
+    "category": "outfit_bottom",
+    "name": "Tailored High-Rise Cigarette Pants",
+    "brand": "Theory",
+    "image_url": "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Midnight Black",
+      "color_hex": "#111111",
+      "weather_tags": ["warm", "cool", "cold", "rain"],
+      "fabric": "Stretch Wool Blend"
     }
   },
   {
@@ -120,6 +180,141 @@
     }
   },
   {
+    "id": "closet_dress_4",
+    "category": "outfit_dress",
+    "name": "Sculptural Tailored Blazer Dress",
+    "brand": "Mugler",
+    "image_url": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Raven Black",
+      "color_hex": "#0D0D0D",
+      "weather_tags": ["cool", "cold", "warm"],
+      "fabric": "Structured Crepe"
+    }
+  },
+  {
+    "id": "closet_dress_5",
+    "category": "outfit_dress",
+    "name": "Silk Georgette Pleated Evening Gown",
+    "brand": "Zimmermann",
+    "image_url": "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Blush Coral Rose",
+      "color_hex": "#E0837A",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "100% Silk Georgette"
+    }
+  },
+  {
+    "id": "closet_dress_6",
+    "category": "outfit_dress",
+    "name": "Linen Wrap Belted Midi Dress",
+    "brand": "Faithfull the Brand",
+    "image_url": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Terracotta Rust",
+      "color_hex": "#B85D43",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Natural Washed Linen"
+    }
+  },
+  {
+    "id": "closet_dress_7",
+    "category": "outfit_dress",
+    "name": "Ribbed Knit High-Neck Column Dress",
+    "brand": "Nanushka",
+    "image_url": "https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Mocha Taupe",
+      "color_hex": "#6E5B4B",
+      "weather_tags": ["cool", "cold", "warm"],
+      "fabric": "Merino Wool Blend"
+    }
+  },
+  {
+    "id": "closet_dress_8",
+    "category": "outfit_dress",
+    "name": "Scarlet Red Asymmetric Cocktail Dress",
+    "brand": "Jacquemus",
+    "image_url": "https://images.unsplash.com/photo-1502716119720-b23a93e5fe1b?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Crimson Scarlet",
+      "color_hex": "#C41E3A",
+      "weather_tags": ["warm", "hot", "cool"],
+      "fabric": "Viscose Draped Jersey"
+    }
+  },
+  {
+    "id": "closet_dress_9",
+    "category": "outfit_dress",
+    "name": "Embroidered Botanical Chiffon Midi Dress",
+    "brand": "Self-Portrait",
+    "image_url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Sage Garden Green",
+      "color_hex": "#8A9A5B",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Fil Coupé Chiffon"
+    }
+  },
+  {
+    "id": "closet_dress_10",
+    "category": "outfit_dress",
+    "name": "Minimalist Classic Shirtdress",
+    "brand": "Jil Sander",
+    "image_url": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "classy",
+      "color": "Crisp Optical White",
+      "color_hex": "#FAFAFA",
+      "weather_tags": ["hot", "warm", "cool"],
+      "fabric": "Pure Poplin Cotton"
+    }
+  },
+  {
+    "id": "closet_dress_11",
+    "category": "outfit_dress",
+    "name": "Midnight Velvet Sweetheart Gown",
+    "brand": "Galvan London",
+    "image_url": "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "elegant",
+      "color": "Sapphire Midnight",
+      "color_hex": "#0F2027",
+      "weather_tags": ["cool", "cold"],
+      "fabric": "Plush Silk Velvet"
+    }
+  },
+  {
+    "id": "closet_dress_12",
+    "category": "outfit_dress",
+    "name": "Ruched Floral Halterneck Summer Dress",
+    "brand": "Dôen",
+    "image_url": "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Vintage Rose Floral",
+      "color_hex": "#D4A5A5",
+      "weather_tags": ["hot", "warm"],
+      "fabric": "Organic Cotton Voile"
+    }
+  },
+  {
     "id": "closet_outer_1",
     "category": "outfit_outer",
     "name": "Double-Breasted Wool Oversized Blazer",
@@ -147,6 +342,36 @@
       "color_hex": "#D2B48C",
       "weather_tags": ["rain", "cool", "cold"],
       "fabric": "Treated Cotton Gabardine"
+    }
+  },
+  {
+    "id": "closet_outer_3",
+    "category": "outfit_outer",
+    "name": "Cropped Italian Leather Biker Jacket",
+    "brand": "Acne Studios",
+    "image_url": "https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "bold",
+      "color": "Jet Black",
+      "color_hex": "#1A1A1A",
+      "weather_tags": ["cool", "cold", "rain"],
+      "fabric": "100% Full-Grain Leather"
+    }
+  },
+  {
+    "id": "closet_outer_4",
+    "category": "outfit_outer",
+    "name": "Relaxed Tailored Linen Summer Blazer",
+    "brand": "Mango",
+    "image_url": "https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=600&q=80",
+    "is_owned": true,
+    "metadata": {
+      "formality_tag": "casual",
+      "color": "Soft Ecru",
+      "color_hex": "#EFEBD9",
+      "weather_tags": ["warm", "cool"],
+      "fabric": "100% Breathable Linen"
     }
   },
   {
