@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { transferMakeupLook } from '@/lib/youcam/makeup-transfer';
+import { extractYouCamCredentials } from '@/lib/youcam/request-credentials';
+
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   try {
     const contentType = req.headers.get('content-type') || '';
+    const credentials = extractYouCamCredentials(req);
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
@@ -32,11 +36,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Missing reference look photo' }, { status: 400 });
       }
 
-      const result = await transferMakeupLook({ srcImage, refImage });
+      const result = await transferMakeupLook({ srcImage, refImage, credentials });
       return NextResponse.json({ success: true, ...result });
     }
 
     const body = await req.json();
+    const bodyCredentials = extractYouCamCredentials(req, body);
     const { userImageUrl, refImageUrl, userImageBase64, refImageBase64 } = body;
 
     let srcImage: Buffer | string = userImageUrl;
@@ -53,7 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing user image or reference look' }, { status: 400 });
     }
 
-    const result = await transferMakeupLook({ srcImage, refImage });
+    const result = await transferMakeupLook({ srcImage, refImage, credentials: bodyCredentials || credentials });
     return NextResponse.json({ success: true, ...result });
   } catch (err: any) {
     console.error('API Error in makeup-transfer:', err);

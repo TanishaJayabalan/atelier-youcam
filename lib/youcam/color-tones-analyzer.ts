@@ -1,4 +1,5 @@
 import { uploadFile, runTask, pollTask } from './client';
+import { YouCamCredentials } from './auth';
 import { ColorTonesResult } from '@/types/beauty-profile';
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -33,27 +34,38 @@ export function detectUndertone(skinHex: string): 'warm' | 'cool' | 'neutral' | 
 }
 
 export async function analyzeColorTones(
-  imageInput: Buffer | string
+  imageInput: Buffer | string,
+  credentials?: YouCamCredentials
 ): Promise<ColorTonesResult> {
   const isBuffer = Buffer.isBuffer(imageInput);
 
   try {
     let fileId: string;
     if (isBuffer) {
-      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'colortones.jpg');
+      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'colortones.jpg', credentials);
     } else {
       fileId = imageInput;
     }
 
-    const taskId = await runTask('/s2s/v2.0/task/skin-tone-analysis', {
-      src_file_id: fileId.startsWith('http') ? undefined : fileId,
-      src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      face_angle_strictness_level: 'medium',
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/skin-tone-analysis',
+      {
+        version: '1.0',
+        src_file_id: fileId.startsWith('http') ? undefined : fileId,
+        src_file_url: fileId.startsWith('http') ? fileId : undefined,
+        face_angle_strictness_level: 'medium',
+      },
+      credentials
+    );
 
-    const result = await pollTask<any>('/s2s/v2.0/task/skin-tone-analysis', taskId, {
-      timeoutMs: 25000,
-    });
+    const result = await pollTask<any>(
+      '/s2s/v2.0/task/skin-tone-analysis',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     const colorObj =
       result?.data?.results?.color ||

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { UserBeautyProfile } from '@/types/beauty-profile';
 import { matchCelebrityLooks, CelebrityMatch } from '@/lib/celebrity-matcher';
+import { authenticatedFetch } from '@/lib/api-fetch';
 
 interface CelebrityLookPanelProps {
   userImageUrl?: string;
@@ -74,7 +75,7 @@ export default function CelebrityLookPanel({
     setTransferredCelebName(celebMatch.profile.name);
 
     try {
-      const res = await fetch('/api/youcam/makeup-transfer', {
+      const res = await authenticatedFetch('/api/youcam/makeup-transfer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,7 +109,7 @@ export default function CelebrityLookPanel({
       setCustomInspoFile(base64);
 
       try {
-        const res = await fetch('/api/youcam/makeup-transfer', {
+        const res = await authenticatedFetch('/api/youcam/makeup-transfer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

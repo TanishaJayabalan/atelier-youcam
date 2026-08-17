@@ -1,4 +1,5 @@
 import { uploadFile, runTask, pollTask } from './client';
+import { YouCamCredentials } from './auth';
 import { FitzpatrickResult, FitzpatrickType } from '@/types/beauty-profile';
 
 const FITZPATRICK_METADATA: Record<
@@ -44,27 +45,38 @@ const FITZPATRICK_METADATA: Record<
 };
 
 export async function analyzeFitzpatrickScale(
-  imageInput: Buffer | string
+  imageInput: Buffer | string,
+  credentials?: YouCamCredentials
 ): Promise<FitzpatrickResult> {
   const isBuffer = Buffer.isBuffer(imageInput);
 
   try {
     let fileId: string;
     if (isBuffer) {
-      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'fitzpatrick.jpg');
+      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'fitzpatrick.jpg', credentials);
     } else {
       fileId = imageInput;
     }
 
-    const taskId = await runTask('/s2s/v2.0/task/fitzpatrick-scale-analyzer', {
-      src_file_id: fileId.startsWith('http') ? undefined : fileId,
-      src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      version: '1.0',
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/fitzpatrick-scale-analyzer',
+      {
+        version: '1.0',
+        src_file_id: fileId.startsWith('http') ? undefined : fileId,
+        src_file_url: fileId.startsWith('http') ? fileId : undefined,
+        face_angle_strictness_level: 'flexible',
+      },
+      credentials
+    );
 
-    const result = await pollTask<any>('/s2s/v2.0/task/fitzpatrick-scale-analyzer', taskId, {
-      timeoutMs: 25000,
-    });
+    const result = await pollTask<any>(
+      '/s2s/v2.0/task/fitzpatrick-scale-analyzer',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     const rawType = result?.fitzpatrick_scale || result?.results?.fitzpatrick_scale;
     let resolvedType: FitzpatrickType = 'III';

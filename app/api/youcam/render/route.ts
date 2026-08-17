@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveImageBuffer } from '@/lib/image-utils';
+import { extractYouCamCredentials } from '@/lib/youcam/request-credentials';
 import { applyMakeup, MakeupStep } from '@/lib/youcam/makeup-vto';
 import { applyOutfit, applyMultiGarmentOutfit, GarmentToApply } from '@/lib/youcam/clothes-vto';
 import { getLookSession, saveLookSession, ClosetItem } from '@/lib/supabase';
+
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +17,8 @@ export async function POST(req: NextRequest) {
       outfitItem = null as ClosetItem | null,
       outfitItems = null as ClosetItem[] | null,
     } = body;
+
+    const credentials = extractYouCamCredentials(req, body);
 
     if (!selfieBase64) {
       return NextResponse.json(
@@ -51,7 +56,7 @@ export async function POST(req: NextRequest) {
     // Independent parallel execution of Makeup VTO and Clothes VTO with Promise.allSettled
     const [makeupOutcome, clothesOutcome] = await Promise.allSettled([
       makeupSteps.length > 0
-        ? applyMakeup(selfieBuffer, makeupSteps, contentType)
+        ? applyMakeup(selfieBuffer, makeupSteps, contentType, credentials)
         : Promise.resolve(null),
       garmentsToApply.length > 0
         ? garmentsToApply.length === 1
@@ -59,8 +64,9 @@ export async function POST(req: NextRequest) {
               garmentName: garmentsToApply[0].name,
               category: garmentsToApply[0].category,
               selfieContentType: contentType,
+              credentials,
             })
-          : applyMultiGarmentOutfit(selfieBuffer, garmentsToApply, contentType)
+          : applyMultiGarmentOutfit(selfieBuffer, garmentsToApply, contentType, credentials)
         : Promise.resolve(null),
     ]);
 

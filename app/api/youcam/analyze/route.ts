@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveImageBuffer } from '@/lib/image-utils';
+import { extractYouCamCredentials } from '@/lib/youcam/request-credentials';
 import { analyzeParallelBeautyProfile } from '@/lib/youcam/parallel-analyzer';
 import { analyzeSkinTone } from '@/lib/youcam/skin-tone';
 import { analyzeImageOptically } from '@/lib/optical-analyzer';
@@ -7,6 +8,8 @@ import { fetchWeather, WeatherResult } from '@/lib/weather';
 import { getClosetItems, saveLookSession } from '@/lib/supabase';
 import { generateRecommendation } from '@/lib/recommendation-engine';
 import { generateCustomBeautyLook, CustomBeautyLook } from '@/lib/gemini/beauty-stylist';
+
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +24,8 @@ export async function POST(req: NextRequest) {
       city,
       mode,
     } = body;
+
+    const credentials = extractYouCamCredentials(req, body);
 
     if (!selfieBase64) {
       return NextResponse.json(
@@ -77,8 +82,8 @@ export async function POST(req: NextRequest) {
       try {
         console.log('[Analyze Route]: Attempting live YouCam S2S AI analysis...');
         const [bpRes, stRes] = await Promise.all([
-          analyzeParallelBeautyProfile(selfieBuffer),
-          analyzeSkinTone(selfieBuffer, contentType),
+          analyzeParallelBeautyProfile(selfieBuffer, credentials),
+          analyzeSkinTone(selfieBuffer, contentType, credentials),
         ]);
         beautyProfile = bpRes;
         skinTone = stRes;

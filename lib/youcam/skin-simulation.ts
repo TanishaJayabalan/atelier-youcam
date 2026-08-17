@@ -1,4 +1,5 @@
 import { uploadFile, runTask, pollTask } from './client';
+import { YouCamCredentials } from './auth';
 import { SkinAnalysisResult } from './skin-analysis';
 
 export interface SkinSimulationParams {
@@ -63,7 +64,7 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
   }
 
   if (skin?.concerns?.pores || skin?.concerns?.pore) {
-    const raw = skin.concerns.pores?.score ?? skin.concerns.pore?.score ?? 50;
+    const raw = skin?.concerns?.pores?.score ?? skin?.concerns?.pore?.score ?? 50;
     const intensity = mapScore(raw);
     params.pore = Number(intensity.toFixed(2));
     projected.push({
@@ -79,7 +80,7 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
     const intensity = mapScore(raw);
     params.texture = Number(intensity.toFixed(2));
     projected.push({
-      concern: 'Cellular Turnover & Texture Smoothing',
+      concern: 'Epidermal Micro-Exfoliation & Smoothing',
       baselineScore: raw,
       projectedScore: Math.min(96, raw + Math.round((100 - raw) * 0.6)),
       improvementPercent: Math.round(intensity * 55),
@@ -87,36 +88,50 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
   }
 
   if (skin?.concerns?.dark_circles || skin?.concerns?.dark_circle || skin?.concerns?.dark_circle_v2) {
-    const raw = skin.concerns.dark_circles?.score || skin.concerns.dark_circle?.score || skin.concerns.dark_circle_v2?.score || 75;
+    const raw = skin?.concerns?.dark_circles?.score ?? skin?.concerns?.dark_circle?.score ?? skin?.concerns?.dark_circle_v2?.score ?? 60;
     const intensity = mapScore(raw);
     params.dark_circle = Number(intensity.toFixed(2));
     projected.push({
-      concern: 'Periorbital Micro-Circulation & Brightening',
+      concern: 'Periorbital Micro-Circulation & Tone',
       baselineScore: raw,
       projectedScore: Math.min(94, raw + Math.round((100 - raw) * 0.5)),
-      improvementPercent: Math.round(intensity * 48),
+      improvementPercent: Math.round(intensity * 50),
     });
   }
 
   if (skin?.concerns?.wrinkles || skin?.concerns?.wrinkle) {
-    const raw = skin.concerns.wrinkles?.score || skin.concerns.wrinkle?.score || 70;
+    const raw = skin?.concerns?.wrinkles?.score ?? skin?.concerns?.wrinkle?.score ?? 70;
     const intensity = mapScore(raw);
     params.wrinkle = Number(intensity.toFixed(2));
     projected.push({
       concern: 'Fine Line Smoothing & Collagen Plumping',
       baselineScore: raw,
-      projectedScore: Math.min(95, raw + Math.round((100 - raw) * 0.6)),
-      improvementPercent: Math.round(intensity * 55),
+      projectedScore: Math.min(95, raw + Math.round((100 - raw) * 0.5)),
+      improvementPercent: Math.round(intensity * 50),
     });
   }
 
-  // Balanced healthy radiance (subtle glow, not washed out)
-  params.radiance = 0.35;
+  if (skin?.concerns?.eye_bags || skin?.concerns?.eye_bag) {
+    const raw = skin?.concerns?.eye_bags?.score ?? skin?.concerns?.eye_bag?.score ?? 50;
+    const intensity = mapScore(raw);
+    params.eye_bag = Number(intensity.toFixed(2));
+  }
+
+  if (skin?.concerns?.oiliness) {
+    const raw = skin.concerns.oiliness.score;
+    const intensity = mapScore(raw);
+    params.oiliness = Number(intensity.toFixed(2));
+  }
+
+  // Radiance boost always active
+  const overall = skin?.overallScore || 80;
+  const radianceIntensity = Number(Math.max(0.35, Math.min(0.85, (100 - overall) / 75)).toFixed(2));
+  params.radiance = radianceIntensity;
   projected.push({
-    concern: 'Overall Luminous Epidermal Radiance',
-    baselineScore: skin?.overallScore || 78,
-    projectedScore: 94,
-    improvementPercent: 28,
+    concern: 'Epidermal Hydration & Radiance',
+    baselineScore: overall,
+    projectedScore: Math.min(97, overall + Math.round((100 - overall) * 0.65)),
+    improvementPercent: Math.round(radianceIntensity * 60),
   });
 
   return { params, projected };
@@ -124,27 +139,37 @@ export function computeSimulationIntensities(skin: SkinAnalysisResult): {
 
 export async function simulateSkinOutcome(
   imageInput: Buffer | string,
-  skinAnalysis: SkinAnalysisResult
+  skinAnalysis: SkinAnalysisResult,
+  credentials?: YouCamCredentials
 ): Promise<SkinSimulationResponse> {
   const { params, projected } = computeSimulationIntensities(skinAnalysis);
 
   try {
     let fileId: string;
     if (Buffer.isBuffer(imageInput)) {
-      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'simulation_src.jpg');
+      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'simulation_src.jpg', credentials);
     } else {
       fileId = imageInput;
     }
 
-    const taskId = await runTask('/s2s/v2.0/task/skin-simulation', {
-      src_file_id: fileId.startsWith('http') ? undefined : fileId,
-      src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      ...params,
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/skin-simulation',
+      {
+        src_file_id: fileId.startsWith('http') ? undefined : fileId,
+        src_file_url: fileId.startsWith('http') ? fileId : undefined,
+        ...params,
+      },
+      credentials
+    );
 
-    const result = await pollTask<any>('/s2s/v2.0/task/skin-simulation', taskId, {
-      timeoutMs: 30000,
-    });
+    const result = await pollTask<any>(
+      '/s2s/v2.0/task/skin-simulation',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     const simulatedImageUrl =
       result?.url ||

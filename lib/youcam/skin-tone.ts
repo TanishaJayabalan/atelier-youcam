@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 import { uploadFile, runTask, pollTask } from './client';
+import { YouCamCredentials } from './auth';
 
 export type Undertone = 'warm' | 'cool' | 'neutral';
 export type SeasonalPalette = 'Spring' | 'Summer' | 'Autumn' | 'Winter';
@@ -213,24 +214,36 @@ export function normalizeSkinToneResponse(raw: any): SkinToneResult {
 
 export async function analyzeSkinTone(
   selfieBuffer: Buffer,
-  contentType: string = 'image/jpeg'
+  contentType: string = 'image/jpeg',
+  credentials?: YouCamCredentials
 ): Promise<SkinToneResult> {
   try {
     const fileId = await uploadFile(
       '/s2s/v2.0/file',
       selfieBuffer,
       contentType,
-      'selfie_skin_tone.jpg'
+      'selfie_skin_tone.jpg',
+      credentials
     );
 
-    const taskId = await runTask('/s2s/v2.0/task/skin-tone-analysis', {
-      src_file_id: fileId,
-      face_angle_strictness_level: 'flexible',
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/skin-tone-analysis',
+      {
+        version: '1.0',
+        src_file_id: fileId,
+        face_angle_strictness_level: 'flexible',
+      },
+      credentials
+    );
 
-    const rawResult = await pollTask<any>('/s2s/v2.0/task/skin-tone-analysis', taskId, {
-      timeoutMs: 30000,
-    });
+    const rawResult = await pollTask<any>(
+      '/s2s/v2.0/task/skin-tone-analysis',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     return normalizeSkinToneResponse(rawResult);
   } catch (err: any) {

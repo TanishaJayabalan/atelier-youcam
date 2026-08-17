@@ -8,6 +8,7 @@ import { HAIR_COLOR_SHADES, HairColorShade } from '@/lib/youcam/hair-color-vto';
 import { generateHairCareRoutine, HairCareRoutine, HairProductItem } from '@/lib/hair-recommendation-engine';
 import { useCart } from './CartContext';
 import { Sparkles, RefreshCw, SlidersHorizontal, Check, AlertTriangle } from 'lucide-react';
+import { authenticatedFetch } from '@/lib/api-fetch';
 
 interface HairAnalysisPanelProps {
   userImageUrl?: string;
@@ -74,7 +75,7 @@ export default function HairAnalysisPanel({
     const fetchHairDiagnostics = async () => {
       setIsAnalyzingHair(true);
       try {
-        const res = await fetch('/api/youcam/hair-analyze', {
+        const res = await authenticatedFetch('/api/youcam/hair-analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -111,7 +112,7 @@ export default function HairAnalysisPanel({
     setIsProcessing(true);
 
     try {
-      const res = await fetch('/api/youcam/hair-style-vto', {
+      const res = await authenticatedFetch('/api/youcam/hair-style-vto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -136,7 +137,7 @@ export default function HairAnalysisPanel({
     setIsProcessing(true);
 
     try {
-      const res = await fetch('/api/youcam/hair-color-vto', {
+      const res = await authenticatedFetch('/api/youcam/hair-color-vto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,4 +1,5 @@
-import { uploadFile, runTask, pollTask } from './client';
+import { uploadFile, runTask, pollTask, extractImageUrlFromResult } from './client';
+import { YouCamCredentials } from './auth';
 
 export type MakeupCategory = 'foundation' | 'blush' | 'lip' | 'eyeshadow' | 'eyebrow';
 
@@ -118,7 +119,8 @@ export const buildMakeupActions = buildV2MakeupEffects;
 export async function applyMakeup(
   selfieBuffer: Buffer,
   steps: MakeupStep[],
-  contentType: string = 'image/jpeg'
+  contentType: string = 'image/jpeg',
+  credentials?: YouCamCredentials
 ): Promise<MakeupVTOResult> {
   if (!steps || steps.length === 0) {
     throw new Error('At least one makeup step is required for Virtual Try-On.');
@@ -130,33 +132,38 @@ export async function applyMakeup(
       '/s2s/v2.0/file',
       selfieBuffer,
       contentType,
-      'selfie_makeup_vto.jpg'
+      'selfie_makeup_vto.jpg',
+      credentials
     );
 
     // Step 2: Build official v2.0 effects array
     const effects = buildV2MakeupEffects(steps);
 
     // Step 3: Run task on /s2s/v2.0/task/makeup-vto
-    const taskId = await runTask('/s2s/v2.0/task/makeup-vto', {
-      src_file_id: fileId,
-      version: '1.0',
-      effects,
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/makeup-vto',
+      {
+        src_file_id: fileId,
+        version: '1.0',
+        effects,
+      },
+      credentials
+    );
 
     // Step 4: Poll task result
-    const rawResult: any = await pollTask('/s2s/v2.0/task/makeup-vto', taskId, {
-      timeoutMs: 40000,
-    });
+    const rawResult: any = await pollTask(
+      '/s2s/v2.0/task/makeup-vto',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
-    const resultImageUrl =
-      rawResult?.results?.url ||
-      rawResult?.results?.[0]?.download_url ||
-      rawResult?.resultImageUrl ||
-      rawResult?.result_image_url ||
-      rawResult?.file_url ||
-      rawResult?.url;
+    const resultImageUrl = extractImageUrlFromResult(rawResult);
 
     if (!resultImageUrl) {
+      console.error('[Makeup VTO Empty URL Raw Response]:', JSON.stringify(rawResult, null, 2));
       throw new Error('YouCam makeup VTO returned no output image URL.');
     }
 

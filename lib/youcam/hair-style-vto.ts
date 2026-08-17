@@ -1,4 +1,5 @@
 import { runTask, pollTask, resolveImageInput } from './client';
+import { YouCamCredentials } from './auth';
 
 export interface HairStyleTemplate {
   id: string;
@@ -60,21 +61,31 @@ export const HAIRSTYLE_TEMPLATES: HairStyleTemplate[] = [
 
 export async function applyHairStyleVTO(
   imageInput: Buffer | string,
-  templateId: string = 'female_blunt_bob'
+  templateId: string = 'female_blunt_bob',
+  credentials?: YouCamCredentials
 ): Promise<{ imageUrl: string; template: HairStyleTemplate }> {
   const chosenTemplate = HAIRSTYLE_TEMPLATES.find((t) => t.id === templateId) || HAIRSTYLE_TEMPLATES[0];
 
   try {
-    const imagePayload = await resolveImageInput(imageInput, 'hairstyle_src.jpg');
+    const imagePayload = await resolveImageInput(imageInput, 'hairstyle_src.jpg', '/s2s/v2.0/file', credentials);
 
-    const taskId = await runTask('/s2s/v2.1/task/hair-transfer', {
-      ...imagePayload,
-      template_id: chosenTemplate.id,
-    });
+    const taskId = await runTask(
+      '/s2s/v2.1/task/hair-transfer',
+      {
+        ...imagePayload,
+        template_id: chosenTemplate.id,
+      },
+      credentials
+    );
 
-    const result = await pollTask<any>('/s2s/v2.1/task/hair-transfer', taskId, {
-      timeoutMs: 35000,
-    });
+    const result = await pollTask<any>(
+      '/s2s/v2.1/task/hair-transfer',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     const outputUrl =
       result?.url ||

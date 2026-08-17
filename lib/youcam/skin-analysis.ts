@@ -2,6 +2,7 @@
 import AdmZip from 'adm-zip';
 import sharp from 'sharp';
 import { uploadFile, runTask, pollTask } from './client';
+import { YouCamCredentials } from './auth';
 
 export type SkinType = 'oily' | 'dry' | 'combination' | 'sensitive' | 'normal';
 
@@ -280,7 +281,8 @@ export function normalizeSkinAnalysisResponse(raw: any): SkinAnalysisResult {
 
 export async function analyzeSkin(
   selfieBuffer: Buffer,
-  contentType: string = 'image/jpeg'
+  contentType: string = 'image/jpeg',
+  credentials?: YouCamCredentials
 ): Promise<SkinAnalysisResult> {
   try {
     // 1. Auto-crop portrait to tight 70% center face & scale to crisp 768x768 to satisfy YouCam bounds
@@ -306,33 +308,44 @@ export async function analyzeSkin(
       '/s2s/v2.0/file',
       processedBuffer,
       contentType,
-      'selfie_skin_analysis.jpg'
+      'selfie_skin_analysis.jpg',
+      credentials
     );
 
-    const taskId = await runTask('/s2s/v2.0/task/skin-analysis', {
-      src_file_id: fileId,
-      dst_actions: [
-        'wrinkle',
-        'droopy_upper_eyelid',
-        'droopy_lower_eyelid',
-        'firmness',
-        'acne',
-        'moisture',
-        'eye_bag',
-        'dark_circle_v2',
-        'age_spot',
-        'radiance',
-        'redness',
-        'oiliness',
-        'pore',
-        'texture',
-        'skin_type',
-      ],
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/skin-analysis',
+      {
+        version: '2.0',
+        src_file_id: fileId,
+        dst_actions: [
+          'wrinkle',
+          'droopy_upper_eyelid',
+          'droopy_lower_eyelid',
+          'firmness',
+          'acne',
+          'moisture',
+          'eye_bag',
+          'dark_circle_v2',
+          'age_spot',
+          'radiance',
+          'redness',
+          'oiliness',
+          'pore',
+          'texture',
+          'skin_type',
+        ],
+      },
+      credentials
+    );
 
-    const rawResult = await pollTask<any>('/s2s/v2.0/task/skin-analysis', taskId, {
-      timeoutMs: 35000,
-    });
+    const rawResult = await pollTask<any>(
+      '/s2s/v2.0/task/skin-analysis',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     // If YouCam returned a zip package URL, fetch and extract score_info.json
     const zipUrl = rawResult?.url || rawResult?.results?.url || rawResult?.file_url;

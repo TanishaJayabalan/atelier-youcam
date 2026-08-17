@@ -1,5 +1,6 @@
-import { uploadFile, runTask, pollTask } from './client';
+import { uploadFile, runTask, pollTask, extractImageUrlFromResult } from './client';
 import { resolveImageBuffer } from '@/lib/image-utils';
+import { YouCamCredentials } from './auth';
 
 export type GarmentCategory =
   | 'upper_body'
@@ -19,9 +20,9 @@ export interface ClothesVTOResult {
 /**
  * Normalizes user / recommendation category tags to valid YouCam S2S cloth-v4 garment categories.
  */
-export function normalizeGarmentCategory(category?: string): GarmentCategory {
+export function normalizeGarmentCategory(category?: any): GarmentCategory {
   if (!category) return 'upper_body';
-  const cat = category.toLowerCase().trim();
+  const cat = String(category).toLowerCase().trim();
 
   if (
     cat.includes('dress') ||
@@ -81,6 +82,7 @@ export async function applyOutfit(
     category?: string;
     selfieContentType?: string;
     garmentContentType?: string;
+    credentials?: YouCamCredentials;
   } = {}
 ): Promise<ClothesVTOResult> {
   const {
@@ -88,6 +90,7 @@ export async function applyOutfit(
     category,
     selfieContentType = 'image/jpeg',
     garmentContentType = 'image/jpeg',
+    credentials,
   } = options;
 
   const normalizedCategory = normalizeGarmentCategory(category);
@@ -98,7 +101,8 @@ export async function applyOutfit(
       '/s2s/v2.0/file',
       selfieBuffer,
       selfieContentType,
-      'selfie_person.jpg'
+      'selfie_person.jpg',
+      credentials
     );
 
     // Step 2: Upload or resolve garment image
@@ -107,7 +111,8 @@ export async function applyOutfit(
       '/s2s/v2.0/file',
       garmentBuffer,
       garmentType || garmentContentType,
-      'garment.jpg'
+      'garment.jpg',
+      credentials
     );
 
     // Step 3: Run AI Clothes VTO Task with valid cloth-v4 payload
@@ -117,22 +122,17 @@ export async function applyOutfit(
       garment_category: normalizedCategory,
     };
 
-    const taskId = await runTask('/s2s/v2.0/task/cloth-v4', taskPayload);
+    const taskId = await runTask('/s2s/v2.0/task/cloth-v4', taskPayload, credentials);
 
     // Step 4: Poll task result
     const rawResult: any = await pollTask('/s2s/v2.0/task/cloth-v4', taskId, {
-      timeoutMs: 45000,
-    });
+      timeoutMs: 120000,
+    }, credentials);
 
-    const resultImageUrl =
-      rawResult?.resultImageUrl ||
-      rawResult?.result_image_url ||
-      rawResult?.file_url ||
-      rawResult?.url ||
-      rawResult?.results?.output_url ||
-      rawResult?.results?.files?.[0]?.url;
+    const resultImageUrl = extractImageUrlFromResult(rawResult);
 
     if (!resultImageUrl) {
+      console.error('[Clothes VTO Empty URL Raw Response]:', JSON.stringify(rawResult, null, 2));
       throw new Error('YouCam clothes VTO returned no output image URL.');
     }
 
@@ -159,7 +159,8 @@ export interface GarmentToApply {
 export async function applyMultiGarmentOutfit(
   initialBodyBuffer: Buffer,
   garments: GarmentToApply[],
-  bodyContentType: string = 'image/jpeg'
+  bodyContentType: string = 'image/jpeg',
+  credentials?: YouCamCredentials
 ): Promise<ClothesVTOResult> {
   const validGarments = garments.filter((g) => Boolean(g && g.image_url));
   if (validGarments.length === 0) {
@@ -178,6 +179,7 @@ export async function applyMultiGarmentOutfit(
       garmentName: garment.name,
       category: garment.category,
       selfieContentType: currentContentType,
+      credentials,
     });
 
     // If there are subsequent garments to chain, fetch intermediate canvas output

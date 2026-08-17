@@ -1,48 +1,60 @@
 import { uploadFile, runTask, pollTask } from './client';
+import { YouCamCredentials } from './auth';
 import { FaceAttributesResult, FaceShape } from '@/types/beauty-profile';
 
 export async function analyzeFaceAttributes(
-  imageInput: Buffer | string
+  imageInput: Buffer | string,
+  credentials?: YouCamCredentials
 ): Promise<FaceAttributesResult> {
   const isBuffer = Buffer.isBuffer(imageInput);
 
   try {
     let fileId: string;
     if (isBuffer) {
-      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'faceattr.jpg');
+      fileId = await uploadFile('/s2s/v2.0/file', imageInput, 'image/jpeg', 'faceattr.jpg', credentials);
     } else {
       fileId = imageInput;
     }
 
-    const taskId = await runTask('/s2s/v2.0/task/face-attr-analysis', {
-      src_file_id: fileId.startsWith('http') ? undefined : fileId,
-      src_file_url: fileId.startsWith('http') ? fileId : undefined,
-      face_angle_strictness_level: 'flexible',
-      features: [
-        'faceShape',
-        'age',
-        'gender',
-        'eyeShape',
-        'eyeSize',
-        'eyeAngle',
-        'eyeDistance',
-        'eyelid',
-        'eyebrowShape',
-        'eyebrowThickness',
-        'eyebrowDistance',
-        'lipShape',
-        'noseWidth',
-        'noseLength',
-        'cheekbones',
-        'horizontalThird',
-        'verticalFifth',
-        'faceAspectRatio',
-      ],
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/face-attr-analysis',
+      {
+        version: '1.0',
+        src_file_id: fileId.startsWith('http') ? undefined : fileId,
+        src_file_url: fileId.startsWith('http') ? fileId : undefined,
+        face_angle_strictness_level: 'flexible',
+        features: [
+          'faceShape',
+          'age',
+          'gender',
+          'eyeShape',
+          'eyeSize',
+          'eyeAngle',
+          'eyeDistance',
+          'eyelid',
+          'eyebrowShape',
+          'eyebrowThickness',
+          'eyebrowDistance',
+          'lipShape',
+          'noseWidth',
+          'noseLength',
+          'cheekbones',
+          'horizontalThird',
+          'verticalFifth',
+          'faceAspectRatio',
+        ],
+      },
+      credentials
+    );
 
-    const result = await pollTask<any>('/s2s/v2.0/task/face-attr-analysis', taskId, {
-      timeoutMs: 25000,
-    });
+    const result = await pollTask<any>(
+      '/s2s/v2.0/task/face-attr-analysis',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     const res = result?.results || result || {};
 

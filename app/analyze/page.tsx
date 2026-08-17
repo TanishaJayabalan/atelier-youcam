@@ -26,6 +26,7 @@ import { Recommendation } from '@/lib/recommendation-engine';
 import { SkinAnalysisResult } from '@/lib/youcam/skin-analysis';
 import { SkinToneResult } from '@/lib/youcam/skin-tone';
 import { UserBeautyProfile } from '@/types/beauty-profile';
+import { authenticatedFetch, getStoredApiHeaders } from '@/lib/api-fetch';
 
 import { ShoppingBag } from 'lucide-react';
 import { CartProvider, useCart } from '@/components/CartContext';
@@ -53,8 +54,9 @@ function HeaderCartButton() {
 function MirrorCheckContent() {
   const router = useRouter();
   const [userName, setUserName] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Protected Route Check
   useEffect(() => {
     const user = localStorage.getItem('atelier_user');
     if (!user) {
@@ -70,12 +72,29 @@ function MirrorCheckContent() {
     document.cookie = 'atelier_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     router.replace('/login');
   };
-  const [activeTab, setActiveTab] = useState('skin');
+
+  // Sidebar / Tab state
+  const [activeTab, setActiveTab] = useState<string>('skin');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // API Config State
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
   const [apiClientId, setApiClientId] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [isUpdatingEnv, setIsUpdatingEnv] = useState(false);
   const [envUpdateMessage, setEnvUpdateMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  // Load any existing stored API keys into modal state
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('atelier_api_keys');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.clientId) setApiClientId(parsed.clientId);
+        if (parsed.clientSecret) setApiSecret(parsed.clientSecret);
+      }
+    } catch {}
+  }, []);
 
   const handleUpdateEnv = async () => {
     if (!apiClientId || !apiSecret) {
@@ -85,15 +104,15 @@ function MirrorCheckContent() {
     setIsUpdatingEnv(true);
     setEnvUpdateMessage(null);
     try {
-      const res = await updateEnvSecrets(apiClientId, apiSecret);
-      if (res.success) {
-        setEnvUpdateMessage({ type: 'success', text: 'Environment secrets successfully updated!' });
-        setApiClientId('');
-        setApiSecret('');
-        setTimeout(() => setIsApiModalOpen(false), 1500);
-      } else {
-        setEnvUpdateMessage({ type: 'error', text: res.error || 'Failed to update env.' });
-      }
+      localStorage.setItem(
+        'atelier_api_keys',
+        JSON.stringify({ clientId: apiClientId.trim(), clientSecret: apiSecret.trim() })
+      );
+      try {
+        await updateEnvSecrets(apiClientId.trim(), apiSecret.trim());
+      } catch {}
+      setEnvUpdateMessage({ type: 'success', text: 'API credentials active and saved!' });
+      setTimeout(() => setIsApiModalOpen(false), 1200);
     } catch (err: any) {
       setEnvUpdateMessage({ type: 'error', text: err.message });
     } finally {
@@ -149,7 +168,7 @@ function MirrorCheckContent() {
 
     try {
       // Stage 1: Real Multi-AI YouCam Analysis
-      const res = await fetch('/api/youcam/analyze', {
+      const res = await authenticatedFetch('/api/youcam/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -188,25 +207,28 @@ function MirrorCheckContent() {
         if (garments.length > 0) {
           await handleTryOnOutfit(imageToAnalyze, garments, data.sessionId);
         }
-      } else {
+      } else if (activeTab === 'makeup') {
         setIsRendering(true);
-        const renderRes = await fetch('/api/youcam/render', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: data.sessionId,
-            selfieBase64: selectedSelfie,
-            makeupSteps: data.recommendation.makeupSteps,
-            outfitItem: null,
-          }),
-        });
-
-        const renderData = await renderRes.json();
-        if (renderData.success) {
-          setMakeupResultUrl(renderData.makeupResultUrl || null);
-          setMakeupError(renderData.makeupError || null);
-        } else {
-          setMakeupError(renderData.error || 'Failed to render makeup try-on.');
+        try {
+          const renderRes = await authenticatedFetch('/api/youcam/render', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: data.sessionId,
+              selfieBase64: imageToAnalyze,
+              makeupSteps: data.recommendation.makeupSteps,
+              outfitItem: null,
+            }),
+          });
+          const renderData = await renderRes.json();
+          if (renderData.success && renderData.makeupResultUrl) {
+            setMakeupResultUrl(renderData.makeupResultUrl);
+            setMakeupError(null);
+          } else if (renderData.makeupError) {
+            setMakeupError(renderData.makeupError);
+          }
+        } catch (renderErr: any) {
+          setMakeupError(renderErr.message || 'Failed to render makeup try-on.');
         }
       }
 
@@ -224,7 +246,7 @@ function MirrorCheckContent() {
     setIsRendering(true);
     setMakeupError(null);
     try {
-      const res = await fetch('/api/youcam/render', {
+      const res = await authenticatedFetch('/api/youcam/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -256,7 +278,7 @@ function MirrorCheckContent() {
     setIsRenderingOutfit(true);
     setOutfitError(null);
     try {
-      const res = await fetch('/api/youcam/render', {
+      const res = await authenticatedFetch('/api/youcam/render', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

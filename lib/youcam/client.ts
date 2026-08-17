@@ -1,4 +1,4 @@
-import { getAccessToken } from './auth';
+import { getAccessToken, YouCamCredentials } from './auth';
 
 export interface YouCamTaskError {
   code: string;
@@ -27,16 +27,17 @@ const ERROR_CODE_MAP: Record<string, string> = {
 /**
  * Translates raw error codes or messages from YouCam into user-friendly feedback.
  */
-export function formatYouCamError(rawCode?: string, rawMsg?: string): YouCamTaskError {
-  const code = (rawCode || 'error_unknown').toLowerCase();
+export function formatYouCamError(rawCode?: any, rawMsg?: any): YouCamTaskError {
+  const code = String(rawCode || 'error_unknown').toLowerCase();
+  const msgStr = typeof rawMsg === 'string' ? rawMsg : (rawMsg && typeof rawMsg === 'object' ? JSON.stringify(rawMsg) : String(rawMsg || ''));
   const userFriendlyMessage =
     ERROR_CODE_MAP[code] ||
-    rawMsg ||
+    msgStr ||
     "An unexpected error occurred while processing your image. Please try again with a clear selfie.";
 
   return {
     code,
-    message: rawMsg || code,
+    message: msgStr || code,
     userFriendlyMessage,
   };
 }
@@ -44,6 +45,45 @@ export function formatYouCamError(rawCode?: string, rawMsg?: string): YouCamTask
 function getApiBase(): string {
   const custom = process.env.YOUCAM_API_BASE || 'https://yce-api-01.makeupar.com';
   return custom.replace(/\/+$/, '');
+}
+
+export function extractImageUrlFromResult(res: any): string | null {
+  if (!res) return null;
+  if (typeof res === 'string' && res.startsWith('http')) return res;
+  
+  return (
+    res?.url ||
+    res?.output_url ||
+    res?.resultImageUrl ||
+    res?.result_image_url ||
+    res?.file_url ||
+    res?.download_url ||
+    res?.results?.url ||
+    res?.results?.output_url ||
+    res?.results?.file_url ||
+    res?.results?.download_url ||
+    res?.results?.files?.[0]?.url ||
+    res?.results?.files?.[0]?.download_url ||
+    res?.results?.files?.[0]?.file_url ||
+    res?.files?.[0]?.url ||
+    res?.files?.[0]?.download_url ||
+    res?.files?.[0]?.file_url ||
+    res?.data?.url ||
+    res?.data?.output_url ||
+    res?.data?.file_url ||
+    res?.data?.download_url ||
+    res?.data?.results?.url ||
+    res?.data?.results?.output_url ||
+    res?.data?.results?.files?.[0]?.url ||
+    res?.data?.results?.files?.[0]?.download_url ||
+    res?.data?.files?.[0]?.url ||
+    res?.data?.files?.[0]?.download_url ||
+    res?.result?.url ||
+    res?.result?.output_url ||
+    res?.result?.files?.[0]?.url ||
+    res?.result?.files?.[0]?.download_url ||
+    null
+  );
 }
 
 let numericRequestId = 1000;
@@ -64,9 +104,10 @@ export async function uploadFile(
   fileEndpoint: string,
   fileBuffer: Buffer,
   contentType: string = 'image/jpeg',
-  fileName: string = 'selfie.jpg'
+  fileName: string = 'selfie.jpg',
+  credentials?: YouCamCredentials
 ): Promise<string> {
-  const token = await getAccessToken();
+  const token = await getAccessToken(false, credentials);
   const base = getApiBase();
   const normalizedEndpoint = fileEndpoint.startsWith('/') ? fileEndpoint : `/${fileEndpoint}`;
   const url = `${base}${normalizedEndpoint}`;
@@ -136,9 +177,10 @@ export async function uploadFile(
  */
 export async function runTask(
   taskEndpoint: string,
-  body: Record<string, any>
+  body: Record<string, any>,
+  credentials?: YouCamCredentials
 ): Promise<string> {
-  const token = await getAccessToken();
+  const token = await getAccessToken(false, credentials);
   const base = getApiBase();
   const normalizedEndpoint = taskEndpoint.startsWith('/') ? taskEndpoint : `/${taskEndpoint}`;
   const url = `${base}${normalizedEndpoint}`;
@@ -183,10 +225,11 @@ export async function pollTask<T = any>(
   options: {
     timeoutMs?: number;
     initialDelayMs?: number;
-  } = {}
+  } = {},
+  credentials?: YouCamCredentials
 ): Promise<T> {
-  const { timeoutMs = 35000, initialDelayMs = 1000 } = options;
-  const token = await getAccessToken();
+  const { timeoutMs = 120000, initialDelayMs = 1000 } = options;
+  const token = await getAccessToken(false, credentials);
   const base = getApiBase();
   const normalizedEndpoint = taskEndpoint.startsWith('/') ? taskEndpoint : `/${taskEndpoint}`;
 
@@ -221,21 +264,61 @@ export async function pollTask<T = any>(
           break;
         }
         const errText = await res.text();
-        throw new Error(`YouCam task polling failed: HTTP ${res.status} — ${errText}`);
+        throw new Error(`YouCam task polling failed: HTTP ${res.status} from ${url} — ${errText}`);
       }
 
       const data = await res.json();
-      const result = data?.result || data?.data || data;
-      const status = (
-        result?.status ||
-        result?.task_status ||
-        data?.status ||
-        data?.task_status ||
-        ''
-      ).toLowerCase();
+      
+      // Look for task status across all YouCam S2S schemas (ignoring HTTP status numbers like 200)
+      const rawTaskStatus =
+        data?.data?.task_status ??
+        data?.result?.task_status ??
+        data?.task_status ??
+        data?.data?.status ??
+        data?.result?.status ??
+        (typeof data?.status === 'string' ? data.status : undefined) ??
+        '';
+      const status = String(rawTaskStatus || '').toLowerCase();
+      const result = data?.data || data?.result || data;
 
-      if (status === 'success' || status === 'done' || status === 'complete') {
-        return (result?.results || result?.data || result) as T;
+      // Check if results are already populated (both for image VTO and numerical diagnostic analyzers)
+      const hasOutputUrl = Boolean(
+        result?.resultImageUrl ||
+        result?.result_image_url ||
+        result?.file_url ||
+        result?.url ||
+        result?.results?.output_url ||
+        result?.results?.url ||
+        result?.results?.files?.[0]?.url ||
+        result?.files?.[0]?.url ||
+        data?.results?.url ||
+        data?.data?.results?.url ||
+        data?.data?.url
+      );
+
+      const hasDiagnosticResults = Boolean(
+        result?.results?.score_info ||
+        result?.score_info ||
+        result?.results?.concerns ||
+        result?.results?.skin_type ||
+        result?.results?.color ||
+        result?.color ||
+        result?.results?.fitzpatrick_scale ||
+        result?.fitzpatrick_scale ||
+        result?.results?.faceshape ||
+        result?.faceshape ||
+        result?.results?.hair_length ||
+        result?.hair_length
+      );
+
+      if (
+        status === 'success' ||
+        status === 'completed' ||
+        status === 'done' ||
+        hasOutputUrl ||
+        hasDiagnosticResults
+      ) {
+        return result as T;
       }
 
       if (status === 'error' || status === 'failed') {
@@ -282,10 +365,11 @@ export async function pollTask<T = any>(
 export async function resolveImageInput(
   imageInput: Buffer | string,
   filename = 'image.jpg',
-  endpoint = '/s2s/v2.0/file'
+  endpoint = '/s2s/v2.0/file',
+  credentials?: YouCamCredentials
 ): Promise<{ src_file_id?: string; src_file_url?: string }> {
   if (Buffer.isBuffer(imageInput)) {
-    const fileId = await uploadFile(endpoint, imageInput, 'image/jpeg', filename);
+    const fileId = await uploadFile(endpoint, imageInput, 'image/jpeg', filename, credentials);
     return { src_file_id: fileId };
   }
 
@@ -293,7 +377,7 @@ export async function resolveImageInput(
   if (str.startsWith('data:') || str.length > 500) {
     const cleanBase64 = str.replace(/^data:image\/\w+;base64,/, '');
     const buf = Buffer.from(cleanBase64, 'base64');
-    const fileId = await uploadFile(endpoint, buf, 'image/jpeg', filename);
+    const fileId = await uploadFile(endpoint, buf, 'image/jpeg', filename, credentials);
     return { src_file_id: fileId };
   }
 
@@ -304,4 +388,3 @@ export async function resolveImageInput(
   // Already a YouCam file_id
   return { src_file_id: str };
 }
-

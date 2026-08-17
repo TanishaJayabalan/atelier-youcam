@@ -1,5 +1,6 @@
 import sharp from 'sharp';
 import { uploadFile, runTask, pollTask } from './client';
+import { YouCamCredentials } from './auth';
 import { HairProfile } from '@/types/beauty-profile';
 import { WeatherResult } from '../weather';
 
@@ -11,7 +12,8 @@ import { WeatherResult } from '../weather';
  */
 export async function analyzeHairDiagnostics(
   imageInput: Buffer | string,
-  weather?: WeatherResult
+  weather?: WeatherResult,
+  credentials?: YouCamCredentials
 ): Promise<HairProfile> {
   const isBuffer = Buffer.isBuffer(imageInput);
   let imageBuffer: Buffer;
@@ -33,13 +35,22 @@ export async function analyzeHairDiagnostics(
   let engineNotice: string | undefined;
 
   try {
-    const fileId = await uploadFile('/s2s/v2.0/file', imageBuffer, 'image/jpeg', 'hair_analysis.jpg');
-    const taskId = await runTask('/s2s/v2.0/task/hair-length-detection', {
-      src_file_id: fileId,
-    });
-    const lenRes = await pollTask<any>('/s2s/v2.0/task/hair-length-detection', taskId, {
-      timeoutMs: 45000,
-    });
+    const fileId = await uploadFile('/s2s/v2.0/file', imageBuffer, 'image/jpeg', 'hair_analysis.jpg', credentials);
+    const taskId = await runTask(
+      '/s2s/v2.0/task/hair-length-detection',
+      {
+        src_file_id: fileId,
+      },
+      credentials
+    );
+    const lenRes = await pollTask<any>(
+      '/s2s/v2.0/task/hair-length-detection',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
     if (lenRes?.hair_length?.term) {
       detectedLength = lenRes.hair_length.term;
       engineSource = 'youcam_ai';

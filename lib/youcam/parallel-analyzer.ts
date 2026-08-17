@@ -8,6 +8,7 @@ import { analyzeSkin, SkinAnalysisResult } from './skin-analysis';
 import { analyzeFitzpatrickScale } from './fitzpatrick-analyzer';
 import { analyzeColorTones } from './color-tones-analyzer';
 import { analyzeFaceAttributes } from './face-attr-analyzer';
+import { YouCamCredentials } from './auth';
 
 const DEFAULT_FITZPATRICK: FitzpatrickResult = {
   type: 'III',
@@ -55,17 +56,18 @@ const DEFAULT_FACE_ATTRIBUTES: FaceAttributesResult = {
 };
 
 export async function analyzeParallelBeautyProfile(
-  imageInput: Buffer | string
+  imageInput: Buffer | string,
+  credentials?: YouCamCredentials
 ): Promise<UserBeautyProfile> {
   const buf = Buffer.isBuffer(imageInput)
     ? imageInput
     : Buffer.from(String(imageInput).replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
   const [skinRes, fitzpatrickRes, colorTonesRes, faceAttributesRes] = await Promise.allSettled([
-    analyzeSkin(buf, 'image/jpeg'),
-    analyzeFitzpatrickScale(imageInput),
-    analyzeColorTones(imageInput),
-    analyzeFaceAttributes(imageInput),
+    analyzeSkin(buf, 'image/jpeg', credentials),
+    analyzeFitzpatrickScale(imageInput, credentials),
+    analyzeColorTones(imageInput, credentials),
+    analyzeFaceAttributes(imageInput, credentials),
   ]);
 
   let skin: SkinAnalysisResult;

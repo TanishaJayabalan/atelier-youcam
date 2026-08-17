@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { SkinAnalysisResult } from '@/lib/youcam/skin-analysis';
+import { authenticatedFetch } from '@/lib/api-fetch';
 
 interface SkinSimulationCardProps {
   originalImageUrl?: string;
@@ -123,7 +124,7 @@ export default function SkinSimulationCard({
     if (!originalImageUrl) return;
     setIsSimulating(true);
     try {
-      const res = await fetch('/api/youcam/skin-simulation', {
+      const res = await authenticatedFetch('/api/youcam/skin-simulation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

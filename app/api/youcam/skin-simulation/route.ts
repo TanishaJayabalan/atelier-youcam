@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { simulateSkinOutcome } from '@/lib/youcam/skin-simulation';
+import { extractYouCamCredentials } from '@/lib/youcam/request-credentials';
+
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { userImageUrl, userImageBase64, skinAnalysis } = body;
+    const credentials = extractYouCamCredentials(req, body);
 
     let srcImage: Buffer | string = userImageUrl;
     if (userImageBase64) {
@@ -19,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Valid skin analysis results are required for simulation' }, { status: 400 });
     }
 
-    const result = await simulateSkinOutcome(srcImage, skinAnalysis);
+    const result = await simulateSkinOutcome(srcImage, skinAnalysis, credentials);
     return NextResponse.json({ success: true, ...result });
   } catch (err: any) {
     console.error('API Error in skin-simulation:', err);

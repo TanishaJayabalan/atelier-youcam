@@ -35,14 +35,17 @@ export default function LoginPage() {
     setIsUpdatingEnv(true);
     setEnvUpdateMessage(null);
     try {
-      const res = await updateEnvSecrets(apiClientId, apiSecret);
-      if (res.success) {
-        setEnvUpdateMessage({ type: 'success', text: 'Environment secrets successfully updated!' });
-        setApiClientId('');
-        setApiSecret('');
-      } else {
-        setEnvUpdateMessage({ type: 'error', text: res.error || 'Failed to update env.' });
-      }
+      localStorage.setItem(
+        'atelier_api_keys',
+        JSON.stringify({ clientId: apiClientId.trim(), clientSecret: apiSecret.trim() })
+      );
+      try {
+        await updateEnvSecrets(apiClientId.trim(), apiSecret.trim());
+      } catch {}
+      setEnvUpdateMessage({ type: 'success', text: 'API credentials saved! Redirecting to studio...' });
+      setTimeout(() => {
+        router.push('/analyze');
+      }, 700);
     } catch (err: any) {
       setEnvUpdateMessage({ type: 'error', text: err.message });
     } finally {

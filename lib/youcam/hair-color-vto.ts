@@ -1,4 +1,5 @@
 import { runTask, pollTask, resolveImageInput } from './client';
+import { YouCamCredentials } from './auth';
 import { ColorTonesResult } from '@/types/beauty-profile';
 
 export interface HairColorShade {
@@ -68,28 +69,38 @@ export function getRecommendedHairColors(colorTones?: ColorTonesResult): HairCol
 
 export async function applyHairColorVTO(
   imageInput: Buffer | string,
-  colorId: string = 'color_caramel_balayage'
+  colorId: string = 'color_caramel_balayage',
+  credentials?: YouCamCredentials
 ): Promise<{ imageUrl: string; shade: HairColorShade }> {
   const chosenShade = HAIR_COLOR_SHADES.find((c) => c.id === colorId) || HAIR_COLOR_SHADES[0];
 
   try {
-    const imagePayload = await resolveImageInput(imageInput, 'haircolor_src.jpg');
+    const imagePayload = await resolveImageInput(imageInput, 'haircolor_src.jpg', '/s2s/v2.0/file', credentials);
 
-    const taskId = await runTask('/s2s/v2.0/task/hair-color', {
-      ...imagePayload,
-      pattern: { name: 'full' },
-      palettes: [
-        {
-          color: chosenShade.hex,
-          colorIntensity: 65,
-          blend: 60,
-        },
-      ],
-    });
+    const taskId = await runTask(
+      '/s2s/v2.0/task/hair-color',
+      {
+        ...imagePayload,
+        pattern: { name: 'full' },
+        palettes: [
+          {
+            color: chosenShade.hex,
+            colorIntensity: 65,
+            blend: 60,
+          },
+        ],
+      },
+      credentials
+    );
 
-    const result = await pollTask<any>('/s2s/v2.0/task/hair-color', taskId, {
-      timeoutMs: 35000,
-    });
+    const result = await pollTask<any>(
+      '/s2s/v2.0/task/hair-color',
+      taskId,
+      {
+        timeoutMs: 120000,
+      },
+      credentials
+    );
 
     const outputUrl =
       result?.url ||

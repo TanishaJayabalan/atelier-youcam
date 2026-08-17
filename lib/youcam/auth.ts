@@ -5,8 +5,8 @@ interface CachedToken {
   expiresAt: number; // timestamp in milliseconds
 }
 
-let tokenCache: CachedToken | null = null;
-let inflightAuthPromise: Promise<string> | null = null;
+const tokenCacheMap = new Map<string, CachedToken>();
+const inflightAuthMap = new Map<string, Promise<string>>();
 
 /**
  * Normalizes PEM key format to ensure valid RSA public key formatting.
@@ -49,32 +49,42 @@ export function generateIdToken(clientId: string, clientSecretPem: string, times
   return encryptedBuffer.toString('base64');
 }
 
+export interface YouCamCredentials {
+  clientId?: string;
+  clientSecret?: string;
+}
+
 /**
  * Obtains a verified YouCam bearer access_token from the S2S Auth endpoint.
- * Caches the token in memory and proactively refreshes 5 minutes before expiration.
- * Throws if credentials are missing or authentication fails.
+ * Supports custom user credentials as well as environment variable fallbacks.
  */
-export async function getAccessToken(forceRefresh = false): Promise<string> {
+export async function getAccessToken(
+  forceRefresh = false,
+  credentials?: YouCamCredentials
+): Promise<string> {
   const now = Date.now();
   const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes buffer before 2-hour expiry
 
-  if (!forceRefresh && tokenCache && tokenCache.expiresAt > now + REFRESH_BUFFER_MS) {
-    return tokenCache.accessToken;
+  const clientId = credentials?.clientId || process.env.YOUCAM_CLIENT_ID;
+  const clientSecret = credentials?.clientSecret || process.env.YOUCAM_CLIENT_SECRET;
+  const apiBase = (process.env.YOUCAM_API_BASE || 'https://yce-api-01.makeupar.com').replace(/\/+$/, '');
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Missing YouCam API credentials. Please configure your Client ID & Secret in API Settings.');
   }
 
-  if (inflightAuthPromise) {
-    return inflightAuthPromise;
+  const cacheKey = clientId;
+  const cached = tokenCacheMap.get(cacheKey);
+
+  if (!forceRefresh && cached && cached.expiresAt > now + REFRESH_BUFFER_MS) {
+    return cached.accessToken;
   }
 
-  inflightAuthPromise = (async () => {
-    const clientId = process.env.YOUCAM_CLIENT_ID;
-    const clientSecret = process.env.YOUCAM_CLIENT_SECRET;
-    const apiBase = (process.env.YOUCAM_API_BASE || 'https://yce-api-01.makeupar.com').replace(/\/+$/, '');
+  if (inflightAuthMap.has(cacheKey)) {
+    return inflightAuthMap.get(cacheKey)!;
+  }
 
-    if (!clientId || !clientSecret) {
-      throw new Error('Missing YOUCAM_CLIENT_ID or YOUCAM_CLIENT_SECRET — cannot authenticate with YouCam API.');
-    }
-
+  const authPromise = (async () => {
     const idToken = generateIdToken(clientId, clientSecret, now);
     const authUrl = `${apiBase}/s2s/v1.0/client/auth`;
 
@@ -99,22 +109,23 @@ export async function getAccessToken(forceRefresh = false): Promise<string> {
     }
 
     // YouCam S2S access tokens are valid for 2 hours (7200s)
-    tokenCache = {
+    tokenCacheMap.set(cacheKey, {
       accessToken: token,
       expiresAt: now + 2 * 60 * 60 * 1000,
-    };
+    });
     return token;
   })().finally(() => {
-    inflightAuthPromise = null;
+    inflightAuthMap.delete(cacheKey);
   });
 
-  return inflightAuthPromise;
+  inflightAuthMap.set(cacheKey, authPromise);
+  return authPromise;
 }
 
 /**
  * Resets the in-memory token cache (useful for tests).
  */
 export function resetTokenCache(): void {
-  tokenCache = null;
-  inflightAuthPromise = null;
+  tokenCacheMap.clear();
+  inflightAuthMap.clear();
 }
