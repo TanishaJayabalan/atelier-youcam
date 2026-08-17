@@ -75,7 +75,7 @@ export default function WeatherBar({ weather, onWeatherLoaded }: WeatherBarProps
             <button
               type="button"
               onClick={() => setShowSearch(!showSearch)}
-              className="text-[10px] text-amber-400 hover:text-amber-300 underline font-medium cursor-pointer"
+              className="text-[10px] text-[#523926] hover:text-[#3B291B] underline font-semibold cursor-pointer transition-colors"
             >
               {showSearch ? 'Cancel' : 'Change City'}
             </button>

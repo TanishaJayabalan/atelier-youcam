@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Mail, Lock, User, Key, Check, AlertCircle } from 'lucide-react';
@@ -12,6 +12,14 @@ export default function LoginPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    const existing = localStorage.getItem('atelier_user');
+    if (existing) {
+      router.replace('/analyze');
+    }
+  }, [router]);
 
   // API Config State
   const [apiClientId, setApiClientId] = useState('');
@@ -44,10 +52,9 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const cred = isLogin ? email : name;
-    if (cred) {
-      localStorage.setItem('atelier_user', cred);
-    }
+    const cred = (isLogin ? email : name) || 'Beauty Connoisseur';
+    localStorage.setItem('atelier_user', cred);
+    document.cookie = `atelier_user=${encodeURIComponent(cred)}; path=/; max-age=2592000`;
     setStep(2);
   };
 
@@ -59,15 +66,15 @@ export default function LoginPage() {
     <main className="min-h-screen bg-[#F6F4F0] flex selection:bg-[#D9CDB8] selection:text-[#2C2C2C]">
       
       {/* Left side: Aesthetic image */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <div className="absolute inset-0 bg-black/10 z-10" />
+      <div className="hidden lg:block lg:w-1/2 relative bg-[#EBE7DF]">
+        <div className="absolute inset-0 bg-black/5 z-10" />
         <img 
-          src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=2071&auto=format&fit=crop" 
-          alt="High fashion portrait"
+          src="/images/skincare-collage-1.jpg" 
+          alt="Luminous beauty and skincare portrait"
           className="w-full h-full object-cover"
         />
         <div className="absolute top-8 left-8 z-20">
-          <Link href="/" className="flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm font-medium">
+          <Link href="/" className="flex items-center gap-2 text-white/90 hover:text-white drop-shadow-md transition-colors text-sm font-medium">
             <ArrowLeft className="w-4 h-4" /> Back to Home
           </Link>
         </div>

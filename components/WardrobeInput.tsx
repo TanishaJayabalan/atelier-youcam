@@ -118,7 +118,7 @@ export default function WardrobeInput({
           {selectedSelfie && (
             <div className="mt-4 flex items-center justify-end">
               <button 
-                onClick={onAnalyze}
+                onClick={() => onAnalyze()}
                 disabled={isAnalyzing || isRendering}
                 className="bg-[#2C2C2C] hover:bg-black text-white px-6 py-2 rounded-xl text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
               >

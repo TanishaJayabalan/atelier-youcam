@@ -16,11 +16,19 @@ function ResultContent() {
   const router = useRouter();
   const sessionId = searchParams.get('session');
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [session, setSession] = useState<LookSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const user = localStorage.getItem('atelier_user');
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+    setIsAuthenticated(true);
+
     if (!sessionId) {
       router.push('/analyze');
       return;
@@ -42,11 +50,13 @@ function ResultContent() {
     fetchSession();
   }, [sessionId, router]);
 
-  if (loading) {
+  if (!isAuthenticated || loading) {
     return (
       <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-stone-700">
         <div className="w-8 h-8 rounded-full border-3 border-amber-700 border-t-transparent animate-spin mb-3" />
-        <p className="text-xs font-semibold">Loading saved look session...</p>
+        <p className="text-xs font-semibold">
+          {!isAuthenticated ? 'Authenticating...' : 'Loading saved look session...'}
+        </p>
       </div>
     );
   }

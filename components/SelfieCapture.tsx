@@ -2,40 +2,50 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Camera, Upload, RefreshCw, Sparkles, CheckCircle2, Image as ImageIcon, VideoOff, Aperture } from 'lucide-react';
+import ErrorBanner from './ErrorBanner';
 
 interface SelfieCaptureProps {
   onSelfieSelected: (base64: string | null) => void;
   selectedSelfie: string | null;
-  captureMode?: 'portrait' | 'full-body';
+  captureMode?: 'portrait' | 'full-body' | 'hair' | 'makeup' | 'skin';
+  title?: string;
+  subtitle?: string;
 }
 
 const SAMPLE_SELFIES = [
   {
     id: 'sample_1',
-    label: 'Studio Portrait (Warm Golden)',
-    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&h=600&q=80',
+    label: 'Deep Melanin / Braided (Type V-VI)',
+    url: '/images/model-1.jpg',
   },
   {
     id: 'sample_2',
-    label: 'Natural Daylight (Neutral)',
-    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&h=600&q=80',
+    label: 'Porcelain Dewy / Bob (Type I-II)',
+    url: '/images/model-2.jpg',
   },
   {
     id: 'sample_3',
-    label: 'Deep Melanin (Rich Radiance)',
-    url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=600&h=600&q=80',
+    label: 'Sun-Kissed Olive / Freckles (Type IV)',
+    url: '/images/model-3.jpg',
   },
   {
     id: 'sample_4',
-    label: 'Clean Headshot (Classic Focus)',
-    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&h=600&q=80',
+    label: 'Fair Rosy / Blonde (Type I-II)',
+    url: '/images/model-4.jpg',
   },
 ];
 
-export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captureMode = 'portrait' }: SelfieCaptureProps) {
+export default function SelfieCapture({
+  onSelfieSelected,
+  selectedSelfie,
+  captureMode = 'portrait',
+  title,
+  subtitle,
+}: SelfieCaptureProps) {
   const [sourceType, setSourceType] = useState<'camera' | 'upload' | 'samples'>('camera');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [capturedFromCamera, setCapturedFromCamera] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -47,6 +57,7 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captur
   // Convert image URL to base64
   const loadUrlAsBase64 = useCallback(async (url: string) => {
     try {
+      setFileError(null);
       const res = await fetch(url);
       const blob = await res.blob();
       const reader = new FileReader();
@@ -73,64 +84,58 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captur
       reader.readAsDataURL(blob);
     } catch (e) {
       console.error('Failed to load sample image:', e);
+      setFileError('Failed to load sample model image.');
     }
   }, [onSelfieSelected]);
 
   const isStartingRef = useRef(false);
 
   // Start live webcam stream
-  const startCamera = useCallback(async () => {
+  const startCamera = async () => {
     if (isStartingRef.current) return;
     isStartingRef.current = true;
     setCameraError(null);
+    setFileError(null);
     try {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'user',
           width: { ideal: 1280 },
-          height: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user',
         },
-        audio: false,
       });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-        } catch (playErr: any) {
-          if (playErr.name !== 'AbortError') {
-            console.warn('Video play error:', playErr);
-          }
-        }
+        await videoRef.current.play().catch(() => {});
       }
       setCameraActive(true);
     } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        console.warn('Camera permission error:', err);
-        setCameraError('Camera access denied or unavailable. Please enable permissions or use sample presets.');
-      }
+      setCameraError(
+        'Camera access denied or unavailable. Please enable permissions or use sample presets.'
+      );
       setCameraActive(false);
     } finally {
       isStartingRef.current = false;
     }
-  }, []);
+  };
 
   // Stop live webcam stream
-  const stopCamera = useCallback(() => {
+  const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     setCameraActive(false);
-  }, []);
+  };
 
   // Control camera start/stop on tab change
   useEffect(() => {
-    if (sourceType === 'camera' && !capturedFromCamera) {
+    if (sourceType === 'camera' && !selectedSelfie) {
       startCamera();
     } else {
       stopCamera();
@@ -138,49 +143,36 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captur
     return () => {
       stopCamera();
     };
-  }, [sourceType, capturedFromCamera, startCamera, stopCamera]);
+  }, [sourceType, selectedSelfie]);
 
   // Capture photo from webcam
   const capturePhoto = () => {
     if (!videoRef.current) return;
+    setFlash(true);
+    setTimeout(() => setFlash(false), 200);
+
     const video = videoRef.current;
-    const vWidth = video.videoWidth || 1280;
-    const vHeight = video.videoHeight || 720;
-
-    // Crop to 3:4 portrait matching the visual frame shown in the UI
-    const targetAspect = 3 / 4;
-    let sWidth = vHeight * targetAspect;
-    let sHeight = vHeight;
-
-    if (sWidth > vWidth) {
-      sWidth = vWidth;
-      sHeight = vWidth / targetAspect;
-    }
-
-    const sx = Math.max(0, (vWidth - sWidth) / 2);
-    const sy = Math.max(0, (vHeight - sHeight) / 2);
-
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(sWidth);
-    canvas.height = Math.round(sHeight);
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
     const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-      const base64 = canvas.toDataURL('image/jpeg', 0.95);
+    if (!ctx) return;
 
-      setFlash(true);
-      setTimeout(() => setFlash(false), 200);
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      setCapturedFromCamera(true);
-      onSelfieSelected(base64);
-      stopCamera();
-    }
+    const base64 = canvas.toDataURL('image/jpeg', 0.95);
+    setCapturedFromCamera(true);
+    setFileError(null);
+    onSelfieSelected(base64);
+    stopCamera();
   };
 
   const handleRetake = () => {
     setCapturedFromCamera(false);
+    setFileError(null);
     onSelfieSelected(null);
     if (sourceType === 'camera') {
       startCamera();
@@ -188,29 +180,60 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captur
   };
 
   const processFile = (file: File) => {
+    setFileError(null);
+
+    // 1. Validate file format
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file (JPG or PNG).');
+      setFileError('The selected file format is not accepted. Please upload a JPG, PNG, or WEBP photo.');
       return;
     }
+
+    // 2. Validate file size (under 15MB)
+    if (file.size > 15 * 1024 * 1024) {
+      setFileError('Photo file size is too large (exceeds 15MB). Please choose a smaller photo.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const rawBase64 = event.target?.result as string;
       const img = new Image();
+      img.onerror = () => {
+        setFileError('Could not decode the uploaded image. Please try another photo.');
+      };
       img.onload = () => {
+        // High-precision client-side downscale to prevent payload overflows
+        const maxDim = 1920;
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, w, h);
           setCapturedFromCamera(false);
-          onSelfieSelected(canvas.toDataURL('image/jpeg', 0.95));
+          onSelfieSelected(canvas.toDataURL('image/jpeg', 0.92));
         } else {
           setCapturedFromCamera(false);
           onSelfieSelected(rawBase64);
         }
       };
       img.src = rawBase64;
+    };
+    reader.onerror = () => {
+      setFileError('Failed to read the selected file.');
     };
     reader.readAsDataURL(file);
   };
@@ -239,18 +262,36 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captur
     }
   };
 
+  const headerTitle = title || (
+    captureMode === 'hair'
+      ? 'Your Hair & Crown Canvas'
+      : captureMode === 'makeup'
+      ? 'Your Makeup & Facial Canvas'
+      : captureMode === 'full-body'
+      ? 'Your Full Body Canvas'
+      : 'Your Portrait & Facial Canvas'
+  );
+
+  const headerSubtitle = subtitle || (
+    captureMode === 'hair'
+      ? 'Scan hair architecture, curl pattern, and natural pigment for restyling & care.'
+      : captureMode === 'makeup'
+      ? 'Facial geometry and undertone analysis for perfect cosmetic shade matching.'
+      : captureMode === 'full-body'
+      ? 'Upload a full body photo for accurate wardrobe recommendations.'
+      : 'Real YouCam AI biometric facial analysis for skin health and color harmony.'
+  );
+
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-700" />
-            1. {captureMode === 'full-body' ? 'Your Full Body Canvas' : 'Your Portrait & Facial Canvas'}
+            {headerTitle}
           </h2>
           <p className="text-xs text-stone-500 mt-0.5">
-            {captureMode === 'full-body' 
-              ? 'Upload a full body photo for accurate wardrobe recommendations.'
-              : 'Real YouCam AI biometric facial analysis for skin health and color harmony.'}
+            {headerSubtitle}
           </p>
         </div>
 
@@ -422,6 +463,16 @@ export default function SelfieCapture({ onSelfieSelected, selectedSelfie, captur
             <p className="text-xs text-stone-500 mt-1">
               Supports high-res JPG or PNG portrait selfies
             </p>
+          </div>
+        )}
+
+        {/* File Error Notice */}
+        {fileError && (
+          <div className="mt-3">
+            <ErrorBanner
+              error={fileError}
+              onSelectNewPhoto={() => fileInputRef.current?.click()}
+            />
           </div>
         )}
       </div>

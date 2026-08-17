@@ -5,6 +5,7 @@ import { CheckCircle2, Paintbrush, SplitSquareVertical, SlidersHorizontal, Alert
 import { MakeupStep } from '@/lib/youcam/makeup-vto';
 import { UserBeautyProfile } from '@/types/beauty-profile';
 import { findFoundationMatch } from '@/lib/foundation-matcher';
+import ErrorBanner from './ErrorBanner';
 
 interface MakeupPreviewProps {
   makeupSteps: MakeupStep[];
@@ -81,22 +82,13 @@ export default function MakeupPreview({
         </div>
 
         {/* Main Canvas Viewport */}
-        <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#FAF9F6] border border-stone-200 mb-5 flex items-center justify-center select-none group">
+        <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-[#FAF9F6] border border-stone-200 mb-5 flex items-center justify-center select-none group p-4">
           {makeupError ? (
-            <div className="p-6 text-center text-stone-300 max-w-sm flex flex-col items-center">
-              <AlertCircle className="w-8 h-8 text-amber-500 mb-2" />
-              <h4 className="text-xs font-bold text-white mb-1">Makeup Try-On Unavailable</h4>
-              <p className="text-[11px] text-stone-400 mb-3">{makeupError}</p>
-              {onRetry && (
-                <button
-                  type="button"
-                  onClick={onRetry}
-                  className="bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Retry Makeup VTO
-                </button>
-              )}
+            <div className="w-full max-w-md">
+              <ErrorBanner
+                error={makeupError}
+                onRetry={onRetry}
+              />
             </div>
           ) : isRendering ? (
             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center animate-shimmer relative">

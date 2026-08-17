@@ -20,6 +20,7 @@ import HairstylePicker from '@/components/HairstylePicker';
 import HairAnalysisPanel from '@/components/HairAnalysisPanel';
 import GapFillShelf from '@/components/GapFillShelf';
 import CelebrityLookPanel from '@/components/CelebrityLookPanel';
+import ErrorBanner from '@/components/ErrorBanner';
 import { WeatherResult } from '@/lib/weather';
 import { Recommendation } from '@/lib/recommendation-engine';
 import { SkinAnalysisResult } from '@/lib/youcam/skin-analysis';
@@ -52,10 +53,22 @@ function HeaderCartButton() {
 function MirrorCheckContent() {
   const router = useRouter();
   const [userName, setUserName] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const user = localStorage.getItem('atelier_user');
+    if (!user) {
+      router.replace('/login');
+    } else {
+      setUserName(user.split('@')[0]);
+      setIsAuthenticated(true);
+    }
+  }, [router]);
 
   const handleSignOut = () => {
     localStorage.removeItem('atelier_user');
-    router.push('/login');
+    document.cookie = 'atelier_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    router.replace('/login');
   };
   const [activeTab, setActiveTab] = useState('skin');
   const [isApiModalOpen, setIsApiModalOpen] = useState(false);
@@ -87,11 +100,6 @@ function MirrorCheckContent() {
       setIsUpdatingEnv(false);
     }
   };
-
-  useEffect(() => {
-    const user = localStorage.getItem('atelier_user');
-    if (user) setUserName(user.split('@')[0]);
-  }, []);
 
   // Input states
   const [selectedSelfie, setSelectedSelfie] = useState<string | null>(null);
@@ -282,6 +290,17 @@ function MirrorCheckContent() {
     setAnalyzedTabs({});
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#F8F6F3] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-[#694A33] border-t-transparent animate-spin" />
+          <span className="text-xs text-stone-500 font-medium tracking-wider uppercase">Authenticating...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F6F3] flex text-[#2C2C2C] selection:bg-[#D9CDB8] selection:text-[#2C2C2C]">
       <CartDrawer />
@@ -361,8 +380,6 @@ function MirrorCheckContent() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Bell className="w-5 h-5 text-stone-400 cursor-pointer hover:text-stone-600 transition-colors hidden sm:block" />
-              <Heart className="w-5 h-5 text-stone-400 cursor-pointer hover:text-stone-600 transition-colors hidden sm:block" />
               <HeaderCartButton />
               {hasResults && (
                 <button
@@ -386,6 +403,7 @@ function MirrorCheckContent() {
                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   <div className="lg:col-span-7">
                     <SelfieCapture
+                      captureMode="skin"
                       selectedSelfie={selectedSelfie}
                       onSelfieSelected={(base64) => setSelectedSelfie(base64)}
                     />
@@ -403,9 +421,13 @@ function MirrorCheckContent() {
                       </div>
 
                       {errorMessage && (
-                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
-                          <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                          <span>{errorMessage}</span>
+                        <div className="mt-4">
+                          <ErrorBanner
+                            error={errorMessage}
+                            onOpenApiSettings={() => setIsApiModalOpen(true)}
+                            onSelectNewPhoto={() => setSelectedSelfie(null)}
+                            onRetry={() => handleAnalyzeAndRender()}
+                          />
                         </div>
                       )}
 
@@ -448,6 +470,7 @@ function MirrorCheckContent() {
                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   <div className="lg:col-span-7">
                     <SelfieCapture
+                      captureMode="makeup"
                       selectedSelfie={selectedSelfie}
                       onSelfieSelected={(base64) => setSelectedSelfie(base64)}
                     />
@@ -471,9 +494,13 @@ function MirrorCheckContent() {
                       </div>
 
                       {errorMessage && (
-                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
-                          <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                          <span>{errorMessage}</span>
+                        <div className="mt-4">
+                          <ErrorBanner
+                            error={errorMessage}
+                            onOpenApiSettings={() => setIsApiModalOpen(true)}
+                            onSelectNewPhoto={() => setSelectedSelfie(null)}
+                            onRetry={() => handleAnalyzeAndRender()}
+                          />
                         </div>
                       )}
 
@@ -524,6 +551,7 @@ function MirrorCheckContent() {
                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                   <div className="lg:col-span-7">
                     <SelfieCapture
+                      captureMode="hair"
                       selectedSelfie={selectedSelfie}
                       onSelfieSelected={(base64) => setSelectedSelfie(base64)}
                     />
@@ -537,6 +565,18 @@ function MirrorCheckContent() {
                            Upload a selfie to unlock the virtual hair studio and analyze your hair type.
                          </p>
                       </div>
+
+                      {errorMessage && (
+                        <div className="mb-4">
+                          <ErrorBanner
+                            error={errorMessage}
+                            onOpenApiSettings={() => setIsApiModalOpen(true)}
+                            onSelectNewPhoto={() => setSelectedSelfie(null)}
+                            onRetry={() => handleAnalyzeAndRender()}
+                          />
+                        </div>
+                      )}
+
                       <button
                         type="button"
                         onClick={handleAnalyzeAndRender}
@@ -644,9 +684,13 @@ function MirrorCheckContent() {
                        </div>
 
                        {errorMessage && (
-                         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
-                           <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                           <span>{errorMessage}</span>
+                         <div className="mt-4">
+                           <ErrorBanner
+                             error={errorMessage}
+                             onOpenApiSettings={() => setIsApiModalOpen(true)}
+                             onSelectNewPhoto={() => setSelectedSelfie(null)}
+                             onRetry={() => handleAnalyzeAndRender()}
+                           />
                          </div>
                        )}
 

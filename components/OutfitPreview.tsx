@@ -17,6 +17,7 @@ import {
   VideoOff,
 } from 'lucide-react';
 import { OutfitRecommendation } from '@/lib/recommendation-engine';
+import ErrorBanner from './ErrorBanner';
 
 interface OutfitPreviewProps {
   outfit: OutfitRecommendation;
@@ -486,22 +487,13 @@ export default function OutfitPreview({
         )}
 
         {/* Main Canvas Viewport */}
-        <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-[#FAF9F6] border border-[#E8E2D9] mb-5 flex items-center justify-center group">
+        <div className="relative rounded-2xl overflow-hidden aspect-[3/4] bg-[#FAF9F6] border border-[#E8E2D9] mb-5 flex items-center justify-center group p-4">
           {outfitError ? (
-            <div className="p-6 text-center text-stone-600 max-w-sm flex flex-col items-center">
-              <AlertCircle className="w-8 h-8 text-amber-500 mb-2" />
-              <h4 className="text-xs font-bold text-[#2C2C2C] mb-1">Clothes Try-On Unavailable</h4>
-              <p className="text-[11px] text-stone-500 mb-3">{outfitError}</p>
-              {onRetry && (
-                <button
-                  type="button"
-                  onClick={onRetry}
-                  className="bg-[#694A33] hover:bg-[#523926] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all shadow-sm"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Retry Clothes VTO
-                </button>
-              )}
+            <div className="w-full max-w-sm">
+              <ErrorBanner
+                error={outfitError}
+                onRetry={onRetry}
+              />
             </div>
           ) : isRendering ? (
             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center relative">

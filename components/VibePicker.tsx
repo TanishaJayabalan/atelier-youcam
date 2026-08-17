@@ -75,7 +75,7 @@ export default function VibePicker({
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-stone-900 flex items-center gap-2">
           <Crown className="w-5 h-5 text-amber-700" />
-          2. Choose Today&apos;s Desired Vibe &amp; Aesthetic
+          Choose Today&apos;s Desired Vibe &amp; Aesthetic
         </h2>
         <p className="text-xs text-stone-500 mt-0.5">
           Select a 1-click curated preset or use the Gemini AI Stylist below to describe any custom aesthetic.
