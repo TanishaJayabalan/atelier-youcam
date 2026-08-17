@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { base64ToBuffer } from '@/lib/image-utils';
+import { resolveImageBuffer } from '@/lib/image-utils';
 import { analyzeParallelBeautyProfile } from '@/lib/youcam/parallel-analyzer';
 import { analyzeSkinTone } from '@/lib/youcam/skin-tone';
 import { analyzeImageOptically } from '@/lib/optical-analyzer';
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { buffer: selfieBuffer, contentType } = base64ToBuffer(selfieBase64);
+    const { buffer: selfieBuffer, contentType } = await resolveImageBuffer(selfieBase64);
 
     // 1. Resolve Weather from real Open-Meteo API
     let weather: WeatherResult;

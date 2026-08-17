@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { base64ToBuffer } from '@/lib/image-utils';
+import { resolveImageBuffer } from '@/lib/image-utils';
 import { applyMakeup, MakeupStep } from '@/lib/youcam/makeup-vto';
 import { applyOutfit, applyMultiGarmentOutfit, GarmentToApply } from '@/lib/youcam/clothes-vto';
 import { getLookSession, saveLookSession, ClosetItem } from '@/lib/supabase';
@@ -22,26 +22,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { buffer: selfieBuffer, contentType } = base64ToBuffer(selfieBase64);
+    const { buffer: selfieBuffer, contentType } = await resolveImageBuffer(selfieBase64);
 
     // Collect garments to apply (supports both single outfitItem and multi-piece outfitItems)
     const garmentsToApply: GarmentToApply[] = [];
     if (Array.isArray(outfitItems) && outfitItems.length > 0) {
-      outfitItems.forEach((item) => {
-        if (item && item.image_url) {
+      outfitItems.forEach((item: any) => {
+        const url = item?.image_url || item?.imageUrl;
+        if (item && url) {
           garmentsToApply.push({
-            name: item.name,
-            category: item.category,
-            image_url: item.image_url,
+            name: item.name || 'Garment',
+            category: item.category || 'upper_body',
+            image_url: url,
           });
         }
       });
-    } else if (outfitItem && outfitItem.image_url) {
-      garmentsToApply.push({
-        name: outfitItem.name,
-        category: outfitItem.category,
-        image_url: outfitItem.image_url,
-      });
+    } else if (outfitItem) {
+      const url = (outfitItem as any)?.image_url || (outfitItem as any)?.imageUrl;
+      if (url) {
+        garmentsToApply.push({
+          name: outfitItem.name || 'Garment',
+          category: outfitItem.category || 'upper_body',
+          image_url: url,
+        });
+      }
     }
 
     // Independent parallel execution of Makeup VTO and Clothes VTO with Promise.allSettled

@@ -1,9 +1,10 @@
 import { uploadFile, runTask, pollTask } from './client';
+import { resolveImageBuffer } from '@/lib/image-utils';
 
 export type GarmentCategory =
-  | 'full_body'
   | 'upper_body'
   | 'lower_body'
+  | 'full_body'
   | 'outer'
   | 'shoes'
   | 'auto';
@@ -11,17 +12,17 @@ export type GarmentCategory =
 export interface ClothesVTOResult {
   resultImageUrl: string;
   garmentName?: string;
-  garmentCategory?: GarmentCategory;
-  rawResponse?: any;
+  garmentCategory?: string;
+  rawResponse: any;
 }
 
 /**
- * Normalizes internal category strings to YouCam AI Clothes v4.0 category types:
- * Allowed values by YouCam S2S cloth-v4: 'full_body' | 'upper_body' | 'lower_body' | 'outer' | 'shoes' | 'auto'
+ * Normalizes user / recommendation category tags to valid YouCam S2S cloth-v4 garment categories.
  */
 export function normalizeGarmentCategory(category?: string): GarmentCategory {
-  if (!category) return 'auto';
-  const cat = category.toLowerCase();
+  if (!category) return 'upper_body';
+  const cat = category.toLowerCase().trim();
+
   if (
     cat.includes('dress') ||
     cat.includes('gown') ||
@@ -56,26 +57,21 @@ export function normalizeGarmentCategory(category?: string): GarmentCategory {
     cat.includes('outer') ||
     cat.includes('jacket') ||
     cat.includes('coat') ||
+    cat.includes('cardigan') ||
     cat.includes('blazer') ||
-    cat.includes('vest') ||
-    cat.includes('cardigan')
+    cat.includes('trench')
   ) {
     return 'outer';
   }
-  if (
-    cat.includes('shoe') ||
-    cat.includes('boot') ||
-    cat.includes('sneaker') ||
-    cat.includes('heel') ||
-    cat.includes('sandal')
-  ) {
+  if (cat.includes('shoe') || cat.includes('boot') || cat.includes('sneaker') || cat.includes('heel')) {
     return 'shoes';
   }
-  return 'auto';
+
+  return 'upper_body';
 }
 
 /**
- * Executes Generative Clothes Virtual Try-On using YouCam S2S API.
+ * Calls YouCam Clothes VTO API (v4 /s2s/v2.0/task/cloth-v4) to fit garments onto a person's photo.
  */
 export async function applyOutfit(
   selfieBuffer: Buffer,
@@ -106,51 +102,20 @@ export async function applyOutfit(
     );
 
     // Step 2: Upload or resolve garment image
-    let garmentFileId: string | null = null;
-    let directRefUrl: string | null = null;
-
-    if (typeof garmentBufferOrUrl === 'string') {
-      if (garmentBufferOrUrl.startsWith('http://') || garmentBufferOrUrl.startsWith('https://')) {
-        directRefUrl = garmentBufferOrUrl;
-        try {
-          const fetchRes = await fetch(garmentBufferOrUrl);
-          if (fetchRes.ok) {
-            const arrayBuf = await fetchRes.arrayBuffer();
-            garmentFileId = await uploadFile(
-              '/s2s/v2.0/file',
-              Buffer.from(arrayBuf),
-              garmentContentType,
-              'garment.jpg'
-            );
-          }
-        } catch (fetchErr) {
-          console.warn('Could not re-upload garment URL, falling back to direct URL:', fetchErr);
-        }
-      } else {
-        garmentFileId = garmentBufferOrUrl;
-      }
-    } else {
-      garmentFileId = await uploadFile(
-        '/s2s/v2.0/file',
-        garmentBufferOrUrl,
-        garmentContentType,
-        'garment.jpg'
-      );
-    }
+    const { buffer: garmentBuffer, contentType: garmentType } = await resolveImageBuffer(garmentBufferOrUrl);
+    const garmentFileId = await uploadFile(
+      '/s2s/v2.0/file',
+      garmentBuffer,
+      garmentType || garmentContentType,
+      'garment.jpg'
+    );
 
     // Step 3: Run AI Clothes VTO Task with valid cloth-v4 payload
     const taskPayload: Record<string, any> = {
       src_file_id: personFileId,
+      ref_file_id: garmentFileId,
       garment_category: normalizedCategory,
     };
-
-    if (garmentFileId) {
-      taskPayload.ref_file_id = garmentFileId;
-    } else if (directRefUrl) {
-      taskPayload.ref_file_url = directRefUrl;
-    } else {
-      throw new Error('No valid garment reference image or file ID available.');
-    }
 
     const taskId = await runTask('/s2s/v2.0/task/cloth-v4', taskPayload);
 
